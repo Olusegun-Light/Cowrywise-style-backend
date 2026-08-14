@@ -1,0 +1,35 @@
+import {
+  OpenApiGeneratorV3,
+  OpenAPIRegistry,
+} from "@asteasolutions/zod-to-openapi";
+import { AuthRegistry } from "../Features/Auth/validation";
+
+const mainRegistry = new OpenAPIRegistry();
+
+mainRegistry.registerComponent("securitySchemes", "bearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+});
+
+const generator = new OpenApiGeneratorV3([
+  ...mainRegistry.definitions,
+  ...AuthRegistry.definitions,
+]);
+
+const openApiDocument = generator.generateDocument({
+  openapi: "3.0.0",
+  info: {
+    title: "Cowrywise API Docs",
+    version: "1.0.0",
+    description: "API for the Cowrywise-style savings & investment backend",
+  },
+  servers: [
+    {
+      url: "http://localhost:3000/api/v1",
+      description: "Local server",
+    },
+  ],
+});
+
+export default openApiDocument;

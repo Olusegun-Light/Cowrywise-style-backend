@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+/src/generated/prisma
+PLAN.md
+.agents
+.claude
+.windsurf
+.vscode
+.qodo
