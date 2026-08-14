@@ -2,7 +2,9 @@ import {
   OpenApiGeneratorV3,
   OpenAPIRegistry,
 } from "@asteasolutions/zod-to-openapi";
+
 import { AuthRegistry } from "../Features/Auth/validation";
+import { WalletRegistry } from "../Features/Wallet/validation";
 
 const mainRegistry = new OpenAPIRegistry();
 
@@ -15,6 +17,7 @@ mainRegistry.registerComponent("securitySchemes", "bearerAuth", {
 const generator = new OpenApiGeneratorV3([
   ...mainRegistry.definitions,
   ...AuthRegistry.definitions,
+  ...WalletRegistry.definitions,
 ]);
 
 const openApiDocument = generator.generateDocument({

@@ -26,6 +26,7 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(15 * 60),
+  PAYSTACK_SECRET_KEY: z.string().min(1, "Paystack secret key is required"),
 });
 
 const parsed = envSchema.safeParse(process.env);

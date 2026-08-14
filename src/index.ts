@@ -1,3 +1,4 @@
+import "./Utils/bigintJson";
 import "express-async-errors";
 import express from "express";
 import cors from "cors";
@@ -21,7 +22,14 @@ const swaggerOptions = {
   customCss: swaggerTheme.getBuffer(SwaggerThemeNameEnum.DARK_MONOKAI),
 };
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
+  }),
+);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 if (env.NODE_ENV !== "test") {

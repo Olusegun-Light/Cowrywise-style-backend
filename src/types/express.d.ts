@@ -5,6 +5,7 @@ declare global {
         id: string;
         email: string;
       };
+      rawBody?: Buffer;
     }
   }
 }

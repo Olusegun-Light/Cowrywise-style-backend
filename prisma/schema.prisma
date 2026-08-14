@@ -24,4 +24,40 @@ model User {
   nin           String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  wallet Wallet?
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  balance   BigInt   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+enum TransactionType {
+  FUNDING
+  WITHDRAWAL
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Transaction {
+  id                String            @id @default(uuid())
+  walletId          String
+  wallet            Wallet            @relation(fields: [walletId], references: [id])
+  type              TransactionType
+  amount            BigInt
+  status            TransactionStatus @default(PENDING)
+  providerReference String            @unique
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 }

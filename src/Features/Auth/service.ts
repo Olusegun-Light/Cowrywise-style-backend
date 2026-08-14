@@ -20,6 +20,9 @@ export const createUser = async (input: CreateUserInput) => {
       lastName: input.lastName,
       email: input.email,
       passwordHash,
+      wallet: {
+        create: {},
+      },
     },
   });
 };
