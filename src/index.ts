@@ -9,6 +9,7 @@ import { errorHandler } from "./Middlewares/errorHandler";
 import { successResponse } from "./Utils/responseHandler";
 import prisma from "./Config/db";
 import { startRedisClient } from "./Config/redis";
+import { startCronService } from "./Jobs";
 
 import swaggerUi from "swagger-ui-express";
 import { SwaggerTheme, SwaggerThemeNameEnum } from "swagger-themes";
@@ -64,6 +65,8 @@ app.use(errorHandler);
 
 const start = async () => {
   await startRedisClient();
+  await startCronService();
+
   app.listen(env.PORT, () => {
     console.log(`Server running at http://localhost:${env.PORT}`);
   });

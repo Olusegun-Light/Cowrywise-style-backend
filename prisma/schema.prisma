@@ -26,6 +26,8 @@ model User {
   updatedAt     DateTime @updatedAt
 
   wallet Wallet?
+
+  savingsPlans SavingsPlan[]
 }
 
 model Wallet {
@@ -42,6 +44,8 @@ model Wallet {
 enum TransactionType {
   FUNDING
   WITHDRAWAL
+  SAVINGS_FUNDING
+  SAVINGS_WITHDRAWAL
 }
 
 enum TransactionStatus {
@@ -54,10 +58,60 @@ model Transaction {
   id                String            @id @default(uuid())
   walletId          String
   wallet            Wallet            @relation(fields: [walletId], references: [id])
+  savingsPlanId     String?
+  savingsPlan       SavingsPlan?      @relation(fields: [savingsPlanId], references: [id])
   type              TransactionType
   amount            BigInt
   status            TransactionStatus @default(PENDING)
   providerReference String            @unique
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+}
+
+enum SavingsPlanType {
+  FLEX
+  FIXED
+  RECURRING
+}
+
+enum SavingsPlanStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model SavingsPlan {
+  id                   String              @id @default(uuid())
+  userId               String
+  user                 User                @relation(fields: [userId], references: [id])
+  planType             SavingsPlanType
+  targetAmount         BigInt
+  currentBalance       BigInt              @default(0)
+  maturityDate         DateTime?
+  frequency            RecurringFrequency?
+  recurringAmount      BigInt?
+  lastRecurringDebitAt DateTime?
+  status               SavingsPlanStatus   @default(ACTIVE)
+  lastAccruedAt        DateTime            @default(now())
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  transactions     Transaction[]
+  interestAccruals InterestAccrual[]
+}
+
+model InterestAccrual {
+  id            String      @id @default(uuid())
+  savingsPlanId String
+  savingsPlan   SavingsPlan @relation(fields: [savingsPlanId], references: [id])
+  accrualDate   DateTime    @db.Date
+  amount        BigInt
+  createdAt     DateTime    @default(now())
+
+  @@unique([savingsPlanId, accrualDate])
 }

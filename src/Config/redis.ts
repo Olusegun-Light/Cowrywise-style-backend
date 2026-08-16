@@ -9,3 +9,11 @@ export const startRedisClient = async () => {
   await redisClient.connect();
   console.log("Redis is connected");
 };
+
+export const getBullMQConnection = () => {
+  const url = new URL(env.REDIS_URL);
+  return {
+    host: url.hostname,
+    port: Number(url.port) || 6379,
+  };
+};

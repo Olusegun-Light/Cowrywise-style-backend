@@ -9,7 +9,7 @@ PG_DATA := /opt/homebrew/var/postgresql@18
 PG_LOG := /opt/homebrew/var/log/postgresql@18.log
 REDIS_CONF := /opt/homebrew/etc/redis.conf
 
-.PHONY: start dev stop db-up db-down redis-up redis-down status logs db-shell migrate build clean
+.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean
 
 # ===============================
 # SMART COMMANDS
@@ -20,6 +20,11 @@ start: db-up redis-up dev
 dev:
 	@echo "🚀 Starting API in dev mode (NODE_ENV=$(NODE_ENV))..."
 	npm run dev
+
+restart:
+	@echo "🔄 Restarting dev server..."
+	@pkill -f "ts-node-dev.*src/index.ts" 2>/dev/null || true
+	@$(MAKE) dev
 
 stop: db-down redis-down
 	@echo "🛑 Stack stopped."
