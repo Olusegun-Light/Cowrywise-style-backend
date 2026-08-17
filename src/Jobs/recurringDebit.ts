@@ -87,6 +87,10 @@ export const startRecurringDebitWorker = () => {
     console.error("Recurring debit job failed:", err);
   });
 
+  worker.on("error", (err) => {
+    console.error("Recurring debit worker error:", err);
+  });
+
   return worker;
 };
 

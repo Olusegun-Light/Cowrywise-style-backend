@@ -68,8 +68,11 @@ export default class WalletController {
       );
     }
 
-    const creditResult =
-      await walletService.creditWalletForReference(reference);
+    const wallet = await walletService.getWalletByUserId(req.user!.id);
+    const creditResult = await walletService.creditWalletForReference(
+      reference,
+      wallet.id,
+    );
 
     return successResponse({
       res,

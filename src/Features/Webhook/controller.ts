@@ -26,6 +26,10 @@ export default class WebhookController {
 
     const payload = req.body as PaystackWebhookPayload;
 
+    if (!payload?.event || !payload?.data?.reference) {
+      throw new AppError("Malformed webhook payload", 400);
+    }
+
     switch (payload.event) {
       case "charge.success":
         await walletService.creditWalletForReference(payload.data.reference);

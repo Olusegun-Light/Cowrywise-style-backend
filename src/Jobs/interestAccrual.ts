@@ -2,7 +2,7 @@ import { Queue, Worker } from "bullmq";
 import prisma from "../Config/db";
 import { Prisma } from "../generated/prisma/client";
 import { getBullMQConnection } from "../Config/redis";
-import { getApyForPlanType } from "../Features/Savings/service";
+import { getApyForPlanType, type PlanType } from "../Features/Savings/service";
 
 const QUEUE_NAME = "interestAccrual";
 
@@ -10,25 +10,33 @@ export const interestAccrualQueue = new Queue(QUEUE_NAME, {
   connection: getBullMQConnection(),
 });
 
-export const accrueInterestForPlan = async (plainId: string, date: Date) => {
-  const plan = await prisma.savingsPlan.findUnique({ where: { id: plainId } });
-
-  if (!plan || plan.status !== "ACTIVE") {
-    return { accrued: false };
-  }
-
-  const apy = getApyForPlanType(plan.planType);
-  const dailyRate = apy / 365;
-  const interestAmount = BigInt(
-    Math.floor(Number(plan.currentBalance) * dailyRate),
-  );
-
-  if (interestAmount <= 0n) {
-    return { accrued: false };
-  }
-
+export const accrueInterestForPlan = async (planId: string, date: Date) => {
   try {
-    await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          id: string;
+          status: string;
+          currentBalance: bigint;
+          planType: PlanType;
+        }[]
+      >`SELECT id, status, "currentBalance", "planType" FROM "SavingsPlan" WHERE id = ${planId} FOR UPDATE`;
+
+      const plan = rows[0];
+      if (!plan || plan.status !== "ACTIVE") {
+        return { accrued: false };
+      }
+
+      const apy = getApyForPlanType(plan.planType);
+      const dailyRate = apy / 365;
+      const interestAmount = BigInt(
+        Math.floor(Number(plan.currentBalance) * dailyRate),
+      );
+
+      if (interestAmount <= 0n) {
+        return { accrued: false };
+      }
+
       await tx.interestAccrual.create({
         data: {
           savingsPlanId: plan.id,
@@ -44,9 +52,9 @@ export const accrueInterestForPlan = async (plainId: string, date: Date) => {
           lastAccruedAt: new Date(),
         },
       });
-    });
 
-    return { accrued: true, amount: interestAmount };
+      return { accrued: true, amount: interestAmount };
+    });
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -90,6 +98,10 @@ export const startInterestAccrualWorker = () => {
 
   worker.on("failed", (job, err) => {
     console.error("Interest accrual job failed:", err);
+  });
+
+  worker.on("error", (err) => {
+    console.error("Interest accrual worker error:", err);
   });
 
   return worker;

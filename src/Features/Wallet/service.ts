@@ -31,7 +31,10 @@ export const createPendingTransaction = (
     },
   });
 
-export const creditWalletForReference = async (reference: string) => {
+export const creditWalletForReference = async (
+  reference: string,
+  expectedWalletId?: string,
+) => {
   return prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<
       { id: string; walletId: string; amount: bigint; status: string }[]
@@ -43,7 +46,11 @@ export const creditWalletForReference = async (reference: string) => {
       throw new AppError("Transaction not found", 404);
     }
 
-    if (transaction.status === "SUCCESS") {
+    if (expectedWalletId && transaction.walletId !== expectedWalletId) {
+      throw new AppError("Transaction not found", 404);
+    }
+
+    if (transaction.status !== "PENDING") {
       return { alreadyProcessed: true };
     }
 

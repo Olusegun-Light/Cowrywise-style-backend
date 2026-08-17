@@ -2,7 +2,7 @@ import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
 import { randomUUID } from "crypto";
 
-type PlanType = "FLEX" | "FIXED" | "RECURRING";
+export type PlanType = "FLEX" | "FIXED" | "RECURRING";
 
 const PLAN_APY: Record<PlanType, number> = {
   FLEX: 0.08,
@@ -70,9 +70,12 @@ export const fundPlanFromWallet = async (
       throw new AppError("Insufficient wallet balance", 400);
     }
 
-    const plan = await tx.savingsPlan.findFirst({
-      where: { id: planId, userId },
-    });
+    const planRows = await tx.$queryRaw<
+      { id: string; status: string }[]
+    >`SELECT id, status FROM "SavingsPlan" WHERE id = ${planId} AND "userId" = ${userId} FOR UPDATE`;
+
+    const plan = planRows[0];
+
     if (!plan) {
       throw new AppError("Savings plan not found", 404);
     }
