@@ -6,6 +6,7 @@ import {
 import { AuthRegistry } from "../Features/Auth/validation";
 import { WalletRegistry } from "../Features/Wallet/validation";
 import { SavingsRegistry } from "../Features/Savings/validation";
+import { InvestmentsRegistry } from "../Features/Investments/validation";
 
 const mainRegistry = new OpenAPIRegistry();
 
@@ -20,6 +21,7 @@ const generator = new OpenApiGeneratorV3([
   ...AuthRegistry.definitions,
   ...WalletRegistry.definitions,
   ...SavingsRegistry.definitions,
+  ...InvestmentsRegistry.definitions,
 ]);
 
 const openApiDocument = generator.generateDocument({

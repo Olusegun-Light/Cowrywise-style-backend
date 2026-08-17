@@ -3,6 +3,7 @@ import asyncHandler from "./asyncHandler";
 import { AppError } from "../Utils/AppError";
 import { verifyToken } from "../Utils/jwt";
 import prisma from "../Config/db";
+import { RoleEnum } from "../Utils/roles";
 
 export const protect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -31,6 +32,7 @@ export const protect = asyncHandler(
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
+      include: { role: true },
     });
 
     if (!user) {
@@ -41,7 +43,22 @@ export const protect = asyncHandler(
       throw new AppError("This account has been deactivated", 403);
     }
 
-    req.user = { id: user.id, email: user.email };
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role?.name ?? null,
+    };
     next();
   },
 );
+
+export const requireAdmin = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
+  if (req.user?.role !== RoleEnum.ADMIN) {
+    throw new AppError("Admin access required", 403);
+  }
+  next();
+};

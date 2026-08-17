@@ -20,6 +20,8 @@ model User {
   passwordHash  String
   emailVerified Boolean  @default(false)
   isActive      Boolean  @default(true)
+  roleId        String?
+  role          Role?    @relation(fields: [roleId], references: [id])
   bvn           String?
   nin           String?
   createdAt     DateTime @default(now())
@@ -27,7 +29,9 @@ model User {
 
   wallet Wallet?
 
-  savingsPlans SavingsPlan[]
+  savingsPlans     SavingsPlan[]
+  fundHoldings     FundHolding[]
+  fundTransactions FundTransaction[]
 }
 
 model Wallet {
@@ -114,4 +118,75 @@ model InterestAccrual {
   createdAt     DateTime    @default(now())
 
   @@unique([savingsPlanId, accrualDate])
+}
+
+enum FundCategory {
+  MONEY_MARKET
+  FIXED_INCOME
+  EQUITY
+  MIXED
+}
+
+model Fund {
+  id         String       @id @default(uuid())
+  name       String
+  manager    String
+  category   FundCategory
+  navPerUnit Decimal
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  navHistory   FundNavHistory[]
+  holdings     FundHolding[]
+  transactions FundTransaction[]
+}
+
+model FundNavHistory {
+  id         String   @id @default(uuid())
+  fundId     String
+  fund       Fund     @relation(fields: [fundId], references: [id])
+  navPerUnit Decimal
+  recordedAt DateTime @default(now())
+}
+
+model FundHolding {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  fundId    String
+  fund      Fund     @relation(fields: [fundId], references: [id])
+  units     Decimal  @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, fundId])
+}
+
+enum FundTransactionType {
+  BUY
+  REDEEM
+}
+
+model FundTransaction {
+  id         String              @id @default(uuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id])
+  fundId     String
+  fund       Fund                @relation(fields: [fundId], references: [id])
+  type       FundTransactionType
+  amount     BigInt
+  units      Decimal
+  navPerUnit Decimal
+  createdAt  DateTime            @default(now())
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
 }
