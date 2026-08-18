@@ -29,9 +29,12 @@ model User {
 
   wallet Wallet?
 
-  savingsPlans     SavingsPlan[]
-  fundHoldings     FundHolding[]
-  fundTransactions FundTransaction[]
+  savingsPlans        SavingsPlan[]
+  fundHoldings        FundHolding[]
+  fundTransactions    FundTransaction[]
+  circlesCreated      Circle[]
+  circleMemberships   CircleMember[]
+  circleContributions CircleContribution[]
 }
 
 model Wallet {
@@ -50,6 +53,8 @@ enum TransactionType {
   WITHDRAWAL
   SAVINGS_FUNDING
   SAVINGS_WITHDRAWAL
+  CIRCLE_CONTRIBUTION
+  CIRCLE_PAYOUT
 }
 
 enum TransactionStatus {
@@ -64,6 +69,8 @@ model Transaction {
   wallet            Wallet            @relation(fields: [walletId], references: [id])
   savingsPlanId     String?
   savingsPlan       SavingsPlan?      @relation(fields: [savingsPlanId], references: [id])
+  circleId          String?
+  circle            Circle?           @relation(fields: [circleId], references: [id])
   type              TransactionType
   amount            BigInt
   status            TransactionStatus @default(PENDING)
@@ -189,4 +196,55 @@ model Role {
   updatedAt   DateTime @updatedAt
 
   users User[]
+}
+
+enum CircleStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+model Circle {
+  id                 String             @id @default(uuid())
+  name               String
+  creatorId          String
+  creator            User               @relation(fields: [creatorId], references: [id])
+  contributionAmount BigInt
+  frequency          RecurringFrequency
+  maxMembers         Int
+  currentRound       Int                @default(1)
+  status             CircleStatus       @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  members       CircleMember[]
+  contributions CircleContribution[]
+  transactions  Transaction[]
+}
+
+model CircleMember {
+  id                String   @id @default(uuid())
+  circleId          String
+  circle            Circle   @relation(fields: [circleId], references: [id])
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  position          Int
+  hasReceivedPayout Boolean  @default(false)
+  joinedAt          DateTime @default(now())
+
+  @@unique([circleId, userId])
+  @@unique([circleId, position])
+}
+
+model CircleContribution {
+  id        String   @id @default(uuid())
+  circleId  String
+  circle    Circle   @relation(fields: [circleId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  round     Int
+  amount    BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([circleId, userId, round])
 }
