@@ -13,19 +13,23 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String   @unique
-  passwordHash  String
-  emailVerified Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  roleId        String?
-  role          Role?    @relation(fields: [roleId], references: [id])
-  bvn           String?
-  nin           String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String    @unique
+  passwordHash       String
+  emailVerified      Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  roleId             String?
+  role               Role?     @relation(fields: [roleId], references: [id])
+  bvn                String?
+  nin                String?
+  kycStatus          KycStatus @default(NOT_SUBMITTED)
+  kycSubmittedAt     DateTime?
+  kycReviewedAt      DateTime?
+  kycRejectionReason String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   wallet Wallet?
 
@@ -55,6 +59,8 @@ enum TransactionType {
   SAVINGS_WITHDRAWAL
   CIRCLE_CONTRIBUTION
   CIRCLE_PAYOUT
+  INVESTMENT_BUY
+  INVESTMENT_REDEEM
 }
 
 enum TransactionStatus {
@@ -71,6 +77,8 @@ model Transaction {
   savingsPlan       SavingsPlan?      @relation(fields: [savingsPlanId], references: [id])
   circleId          String?
   circle            Circle?           @relation(fields: [circleId], references: [id])
+  fundId            String?
+  fund              Fund?             @relation(fields: [fundId], references: [id])
   type              TransactionType
   amount            BigInt
   status            TransactionStatus @default(PENDING)
@@ -144,9 +152,10 @@ model Fund {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  navHistory   FundNavHistory[]
-  holdings     FundHolding[]
-  transactions FundTransaction[]
+  navHistory         FundNavHistory[]
+  holdings           FundHolding[]
+  transactions       FundTransaction[]
+  walletTransactions Transaction[]
 }
 
 model FundNavHistory {
@@ -247,4 +256,11 @@ model CircleContribution {
   createdAt DateTime @default(now())
 
   @@unique([circleId, userId, round])
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
 }

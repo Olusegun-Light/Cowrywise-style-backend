@@ -8,6 +8,9 @@ import { WalletRegistry } from "../Features/Wallet/validation";
 import { SavingsRegistry } from "../Features/Savings/validation";
 import { InvestmentsRegistry } from "../Features/Investments/validation";
 import { CirclesRegistry } from "../Features/Circles/validation";
+import { KycRegistry } from "../Features/Kyc/validation";
+import { AdminRegistry } from "../Features/Admin/validation";
+import { StatementsRegistry } from "../Features/Statements/validation";
 
 const mainRegistry = new OpenAPIRegistry();
 
@@ -24,6 +27,9 @@ const generator = new OpenApiGeneratorV3([
   ...SavingsRegistry.definitions,
   ...InvestmentsRegistry.definitions,
   ...CirclesRegistry.definitions,
+  ...KycRegistry.definitions,
+  ...AdminRegistry.definitions,
+  ...StatementsRegistry.definitions,
 ]);
 
 const openApiDocument = generator.generateDocument({

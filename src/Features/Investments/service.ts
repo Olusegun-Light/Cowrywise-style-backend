@@ -1,6 +1,7 @@
 import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
 import { Prisma } from "../../generated/prisma/client";
+import { randomUUID } from "crypto";
 
 export const listActiveFunds = () =>
   prisma.fund.findMany({
@@ -77,6 +78,17 @@ export const buyFundUnits = async (
     await tx.wallet.update({
       where: { id: wallet.id },
       data: { balance: { decrement: amountKobo } },
+    });
+
+    await tx.transaction.create({
+      data: {
+        walletId: wallet.id,
+        fundId,
+        type: "INVESTMENT_BUY",
+        amount: -amountKobo,
+        status: "SUCCESS",
+        providerReference: `invbuy_${randomUUID()}`,
+      },
     });
 
     await tx.fundHolding.upsert({
@@ -157,6 +169,17 @@ export const redeemFundUnits = async (
     await tx.wallet.update({
       where: { id: wallet.id },
       data: { balance: { increment: payoutKobo } },
+    });
+
+    await tx.transaction.create({
+      data: {
+        walletId: wallet.id,
+        fundId,
+        type: "INVESTMENT_REDEEM",
+        amount: payoutKobo,
+        status: "SUCCESS",
+        providerReference: `invredeem_${randomUUID()}`,
+      },
     });
 
     await tx.fundTransaction.create({

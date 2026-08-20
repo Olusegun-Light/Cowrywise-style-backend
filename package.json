@@ -54,6 +54,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "otp-generator": "^4.0.1",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.23.0",
     "redis": "^6.2.1",
     "swagger-themes": "^1.4.3",
