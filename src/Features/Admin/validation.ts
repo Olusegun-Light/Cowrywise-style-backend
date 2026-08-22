@@ -185,3 +185,40 @@ AdminRegistry.registerPath({
     201: { description: "Broadcast sent" },
   },
 });
+
+export const listAuditLogQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1).openapi({ example: 1 }),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(20)
+    .openapi({ example: 20 }),
+  action: z
+    .enum([
+      "KYC_APPROVE",
+      "KYC_REJECT",
+      "USER_FREEZE",
+      "USER_UNFREEZE",
+      "FUND_NAV_UPDATE",
+      "BROADCAST_SENT",
+    ])
+    .optional()
+    .openapi({ example: "USER_FREEZE" }),
+});
+
+AdminRegistry.registerPath({
+  method: "get",
+  path: "/admin/audit-log",
+  tags: ["Admin"],
+  summary:
+    "List admin action audit log entries, paginated and filterable by action",
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: listAuditLogQuerySchema,
+  },
+  responses: {
+    200: { description: "Audit log retrieved" },
+  },
+});

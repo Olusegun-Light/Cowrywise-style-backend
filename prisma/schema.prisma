@@ -41,8 +41,10 @@ model User {
   circleMemberships      CircleMember[]
   circleContributions    CircleContribution[]
   notificationRecipients NotificationRecipient[]
-  referralsMade          Referral[]              @relation("ReferrerRelation")
-  referredBy             Referral?               @relation("ReferredRelation")
+  auditLogs              AuditLog[]
+
+  referralsMade Referral[] @relation("ReferrerRelation")
+  referredBy    Referral?  @relation("ReferredRelation")
 }
 
 model Wallet {
@@ -316,4 +318,23 @@ model NotificationRecipient {
   createdAt      DateTime     @default(now())
 
   @@unique([notificationId, userId])
+}
+
+enum AuditAction {
+  KYC_APPROVE
+  KYC_REJECT
+  USER_FREEZE
+  USER_UNFREEZE
+  FUND_NAV_UPDATE
+  BROADCAST_SENT
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  adminId   String
+  admin     User        @relation(fields: [adminId], references: [id])
+  action    AuditAction
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
 }

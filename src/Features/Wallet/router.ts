@@ -3,6 +3,7 @@ import express from "express";
 import WalletController from "./controller";
 import asyncHandler from "../../Middlewares/asyncHandler";
 import { protect } from "../../Middlewares/auth";
+import { withdrawalRateLimiter } from "../../Middlewares/rateLimit";
 
 const router: Router = express.Router();
 
@@ -15,7 +16,11 @@ router.get(
   asyncHandler(WalletController.verifyFunding),
 );
 
-router.post("/withdraw", asyncHandler(WalletController.withdraw));
+router.post(
+  "/withdraw",
+  withdrawalRateLimiter,
+  asyncHandler(WalletController.withdraw),
+);
 
 router.get("/", asyncHandler(WalletController.getWallet));
 

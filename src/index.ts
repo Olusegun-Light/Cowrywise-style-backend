@@ -11,12 +11,33 @@ import prisma from "./Config/db";
 import { startRedisClient } from "./Config/redis";
 import { startCronService } from "./Jobs";
 import { initializeDefaultRoles } from "./Config/initializeRoles";
+import helmet from "helmet";
+import { AppError } from "./Utils/AppError";
+import { generalRateLimiter } from "./Middlewares/rateLimit";
 
 import swaggerUi from "swagger-ui-express";
 import { SwaggerTheme, SwaggerThemeNameEnum } from "swagger-themes";
 import openApiDocument from "./Utils/swagger";
 
 const app = express();
+
+app.use(helmet({ contentSecurityPolicy: false }));
+
+const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new AppError("Not allowed by CORS", 403));
+    },
+  }),
+);
+
+app.use(generalRateLimiter);
 
 const swaggerTheme = new SwaggerTheme();
 const swaggerOptions = {
@@ -33,7 +54,7 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
 if (env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }

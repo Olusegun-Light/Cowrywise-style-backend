@@ -32,6 +32,7 @@ const envSchema = z.object({
   MAILTRAP_USER: z.string().min(1),
   MAILTRAP_PASS: z.string().min(1),
   MAIL_FROM: z.string().min(1).default("Cowrywise <noreply@cowrywise.test>"),
+  ALLOWED_ORIGINS: z.string().min(1).default("http://localhost:3000"),
 });
 
 const parsed = envSchema.safeParse(process.env);

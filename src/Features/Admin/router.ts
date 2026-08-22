@@ -31,4 +31,6 @@ router.post(
   asyncHandler(AdminController.sendBroadcast),
 );
 
+router.get("/audit-log", asyncHandler(AdminController.getAuditLog));
+
 export default router;

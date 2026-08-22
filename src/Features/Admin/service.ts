@@ -1,7 +1,17 @@
 import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
-import type { KycStatus } from "../../generated/prisma/client";
+import type { AuditAction, KycStatus } from "../../generated/prisma/client";
 import * as notificationsService from "../Notifications/service";
+
+export const logAdminAction = (
+  adminId: string,
+  action: AuditAction,
+  targetId?: string,
+  metadata?: Record<string, string | number | boolean | null>,
+) =>
+  prisma.auditLog.create({
+    data: { adminId, action, targetId, metadata },
+  });
 
 export const listPendingKyc = () =>
   prisma.user.findMany({
@@ -16,7 +26,7 @@ export const listPendingKyc = () =>
     orderBy: { kycSubmittedAt: "asc" },
   });
 
-export const approveKyc = async (userId: string) => {
+export const approveKyc = async (userId: string, adminId: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new AppError("User not found", 404);
@@ -25,15 +35,20 @@ export const approveKyc = async (userId: string) => {
     throw new AppError("KYC submission is not pending review", 400);
   }
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      kycStatus: "APPROVED",
-      kycReviewedAt: new Date(),
-      kycRejectionReason: null,
-    },
-    select: { id: true, kycStatus: true, kycReviewedAt: true },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: "APPROVED",
+        kycReviewedAt: new Date(),
+        kycRejectionReason: null,
+      },
+      select: { id: true, kycStatus: true, kycReviewedAt: true },
+    }),
+    prisma.auditLog.create({
+      data: { adminId, action: "KYC_APPROVE", targetId: userId },
+    }),
+  ]);
 
   try {
     await notificationsService.createNotification(
@@ -49,7 +64,11 @@ export const approveKyc = async (userId: string) => {
   return updated;
 };
 
-export const rejectKyc = async (userId: string, reason: string) => {
+export const rejectKyc = async (
+  userId: string,
+  reason: string,
+  adminId: string,
+) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new AppError("User not found", 404);
@@ -58,20 +77,30 @@ export const rejectKyc = async (userId: string, reason: string) => {
     throw new AppError("KYC submission is not pending review", 400);
   }
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      kycStatus: "REJECTED",
-      kycReviewedAt: new Date(),
-      kycRejectionReason: reason,
-    },
-    select: {
-      id: true,
-      kycStatus: true,
-      kycReviewedAt: true,
-      kycRejectionReason: true,
-    },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: "REJECTED",
+        kycReviewedAt: new Date(),
+        kycRejectionReason: reason,
+      },
+      select: {
+        id: true,
+        kycStatus: true,
+        kycReviewedAt: true,
+        kycRejectionReason: true,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        adminId,
+        action: "KYC_REJECT",
+        targetId: userId,
+        metadata: { reason },
+      },
+    }),
+  ]);
 
   try {
     await notificationsService.createNotification(
@@ -86,6 +115,7 @@ export const rejectKyc = async (userId: string, reason: string) => {
 
   return updated;
 };
+
 export const listUsers = async (
   page: number,
   limit: number,
@@ -120,8 +150,8 @@ export const listUsers = async (
   return { users, total, page, limit };
 };
 
-export const freezeUser = async (userId: string, adminUserId: string) => {
-  if (userId === adminUserId) {
+export const freezeUser = async (userId: string, adminId: string) => {
+  if (userId === adminId) {
     throw new AppError("You cannot freeze your own account", 400);
   }
 
@@ -133,14 +163,21 @@ export const freezeUser = async (userId: string, adminUserId: string) => {
     throw new AppError("User is already frozen", 400);
   }
 
-  return prisma.user.update({
-    where: { id: userId },
-    data: { isActive: false },
-    select: { id: true, isActive: true },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }),
+    prisma.auditLog.create({
+      data: { adminId, action: "USER_FREEZE", targetId: userId },
+    }),
+  ]);
+
+  return updated;
 };
 
-export const unfreezeUser = async (userId: string) => {
+export const unfreezeUser = async (userId: string, adminId: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new AppError("User not found", 404);
@@ -149,11 +186,18 @@ export const unfreezeUser = async (userId: string) => {
     throw new AppError("User is not frozen", 400);
   }
 
-  return prisma.user.update({
-    where: { id: userId },
-    data: { isActive: true },
-    select: { id: true, isActive: true },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }),
+    prisma.auditLog.create({
+      data: { adminId, action: "USER_UNFREEZE", targetId: userId },
+    }),
+  ]);
+
+  return updated;
 };
 
 export const getAdminStats = async () => {
@@ -220,4 +264,27 @@ export const getAdminStats = async () => {
       byStatus: circlesByStatus,
     },
   };
+};
+
+export const listAuditLog = async (
+  page: number,
+  limit: number,
+  filters: { action?: AuditAction },
+) => {
+  const where = filters.action ? { action: filters.action } : {};
+
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      where,
+      include: {
+        admin: { select: { firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.auditLog.count({ where }),
+  ]);
+
+  return { logs, total, page, limit };
 };

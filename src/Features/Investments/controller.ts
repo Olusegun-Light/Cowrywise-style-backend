@@ -14,7 +14,11 @@ export default class InvestmentController {
 
     const { navPerUnit } = validateBody(updateNavSchema, req.body);
 
-    const fund = await investmentsService.updateFundNav(fundId, navPerUnit);
+    const fund = await investmentsService.updateFundNav(
+      fundId,
+      navPerUnit,
+      req.user!.id,
+    );
 
     return successResponse({
       res,

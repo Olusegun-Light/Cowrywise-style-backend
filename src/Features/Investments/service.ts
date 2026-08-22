@@ -19,7 +19,11 @@ export const getFundById = async (fundId: string) => {
   return fund;
 };
 
-export const updateFundNav = async (fundId: string, navPerUnit: number) => {
+export const updateFundNav = async (
+  fundId: string,
+  navPerUnit: number,
+  adminId: string,
+) => {
   return prisma.$transaction(async (tx) => {
     const fund = await tx.fund.findUnique({ where: { id: fundId } });
     if (!fund) {
@@ -35,10 +39,18 @@ export const updateFundNav = async (fundId: string, navPerUnit: number) => {
       data: { fundId, navPerUnit },
     });
 
+    await tx.auditLog.create({
+      data: {
+        adminId,
+        action: "FUND_NAV_UPDATE",
+        targetId: fundId,
+        metadata: { navPerUnit },
+      },
+    });
+
     return updated;
   });
 };
-
 export const buyFundUnits = async (
   userId: string,
   fundId: string,

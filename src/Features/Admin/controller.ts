@@ -7,6 +7,7 @@ import {
   rejectKycSchema,
   listUsersQuerySchema,
   createBroadcastSchema,
+  listAuditLogQuerySchema,
 } from "./validation";
 import * as notificationsService from "../Notifications/service";
 
@@ -27,7 +28,7 @@ export default class AdminController {
       throw new AppError("User ID is required", 400);
     }
 
-    const result = await adminService.approveKyc(userId);
+    const result = await adminService.approveKyc(userId, req.user!.id);
 
     return successResponse({
       res,
@@ -44,7 +45,7 @@ export default class AdminController {
 
     const { reason } = validateBody(rejectKycSchema, req.body);
 
-    const result = await adminService.rejectKyc(userId, reason);
+    const result = await adminService.rejectKyc(userId, reason, req.user!.id);
 
     return successResponse({
       res,
@@ -92,7 +93,7 @@ export default class AdminController {
       throw new AppError("User ID is required", 400);
     }
 
-    const result = await adminService.unfreezeUser(userId);
+    const result = await adminService.unfreezeUser(userId, req.user!.id);
 
     return successResponse({
       res,
@@ -120,11 +121,37 @@ export default class AdminController {
       body,
     );
 
+    try {
+      await adminService.logAdminAction(
+        req.user!.id,
+        "BROADCAST_SENT",
+        notification.id,
+        { title },
+      );
+    } catch (err) {
+      console.error("Failed to log broadcast audit entry:", err);
+    }
+
     return successResponse({
       res,
       statusCode: 201,
       message: "Broadcast sent",
       data: notification,
+    });
+  }
+
+  static async getAuditLog(req: Request, res: Response) {
+    const { page, limit, action } = validateBody(
+      listAuditLogQuerySchema,
+      req.query,
+    );
+
+    const result = await adminService.listAuditLog(page, limit, { action });
+
+    return successResponse({
+      res,
+      message: "Audit log retrieved",
+      data: result,
     });
   }
 }
