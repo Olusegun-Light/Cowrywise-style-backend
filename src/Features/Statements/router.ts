@@ -10,4 +10,9 @@ router.use(protect);
 
 router.get("/wallet", asyncHandler(StatementsController.getWalletStatement));
 
+router.get(
+  "/transactions/:transactionId/receipt",
+  asyncHandler(StatementsController.getTransactionReceipt),
+);
+
 export default router;

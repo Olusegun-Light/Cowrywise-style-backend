@@ -40,3 +40,20 @@ StatementsRegistry.registerPath({
     404: { description: "Wallet not found" },
   },
 });
+
+StatementsRegistry.registerPath({
+  method: "get",
+  path: "/statements/transactions/{transactionId}/receipt",
+  tags: ["Statements"],
+  summary: "Download a PDF receipt for a single transaction",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      transactionId: z.string().openapi({ example: "uuid" }),
+    }),
+  },
+  responses: {
+    200: { description: "Receipt PDF" },
+    404: { description: "Transaction not found" },
+  },
+});

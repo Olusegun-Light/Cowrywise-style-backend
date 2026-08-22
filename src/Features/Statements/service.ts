@@ -188,3 +188,55 @@ export const buildStatementCsv = (data: StatementData) => {
   );
   return lines.join("\r\n");
 };
+
+export const getTransactionForReceipt = async (
+  userId: string,
+  transactionId: string,
+) => {
+  const wallet = await prisma.wallet.findUnique({ where: { userId } });
+  if (!wallet) {
+    throw new AppError("Wallet not found", 404);
+  }
+
+  const transaction = await prisma.transaction.findFirst({
+    where: { id: transactionId, walletId: wallet.id },
+  });
+  if (!transaction) {
+    throw new AppError("Transaction not found", 404);
+  }
+
+  return transaction;
+};
+
+export const buildReceiptPdf = async (transaction: Transaction) => {
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  let y = PAGE_HEIGHT - MARGIN;
+
+  const drawLine = (
+    text: string,
+    options: { bold?: boolean; size?: number } = {},
+  ) => {
+    page.drawText(text, {
+      x: MARGIN,
+      y,
+      size: options.size ?? 11,
+      font: options.bold ? boldFont : font,
+    });
+    y -= 20;
+  };
+
+  drawLine("Cowrywise - Transaction Receipt", { bold: true, size: 18 });
+  y -= 10;
+  drawLine(`Reference: ${transaction.providerReference}`);
+  drawLine(`Type: ${transaction.type}`);
+  drawLine(`Status: ${transaction.status}`);
+  drawLine(`Amount: ${NGN(transaction.amount)}`);
+  drawLine(`Date: ${formatDate(transaction.createdAt)}`);
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes);
+};
