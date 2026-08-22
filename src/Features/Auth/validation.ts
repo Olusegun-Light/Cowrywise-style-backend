@@ -28,6 +28,16 @@ export const signupSchema = z.object({
       example: "SecurePassword123!",
       description: "Account password, minimum 8 characters",
     }),
+
+  referralCode: z
+    .string()
+    .length(8, "Referral code must be 8 characters")
+    .transform((v) => v.toUpperCase())
+    .optional()
+    .openapi({
+      example: "AB3D9F2K",
+      description: "Optional referral code from an existing user",
+    }),
 });
 
 const SignupSchema = AuthRegistry.register("SignupRequest", signupSchema);

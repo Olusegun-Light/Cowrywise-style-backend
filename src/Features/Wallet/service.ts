@@ -51,7 +51,7 @@ export const creditWalletForReference = async (
     }
 
     if (transaction.status !== "PENDING") {
-      return { alreadyProcessed: true };
+      return { alreadyProcessed: true, walletId: transaction.walletId };
     }
 
     await tx.wallet.update({
@@ -64,7 +64,7 @@ export const creditWalletForReference = async (
       data: { status: "SUCCESS" },
     });
 
-    return { alreadyProcessed: false };
+    return { alreadyProcessed: false, walletId: transaction.walletId };
   });
 };
 

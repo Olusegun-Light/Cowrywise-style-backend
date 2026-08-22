@@ -4,6 +4,7 @@ import { env } from "../../Config/env";
 import { AppError } from "../../Utils/AppError";
 import { successResponse } from "../../Utils/responseHandler";
 import * as walletService from "../Wallet/service";
+import * as referralsService from "../Referrals/service";
 
 interface PaystackWebhookPayload {
   event: string;
@@ -31,9 +32,15 @@ export default class WebhookController {
     }
 
     switch (payload.event) {
-      case "charge.success":
-        await walletService.creditWalletForReference(payload.data.reference);
+      case "charge.success": {
+        const result = await walletService.creditWalletForReference(
+          payload.data.reference,
+        );
+        if (!result.alreadyProcessed) {
+          await referralsService.rewardReferralIfFirstFunding(result.walletId);
+        }
         break;
+      }
       case "transfer.success":
         await walletService.finalizeWithdrawal(payload.data.reference, true);
         break;

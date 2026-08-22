@@ -5,6 +5,7 @@ import { validateBody } from "../../Utils/validateBody";
 import { successResponse } from "../../Utils/responseHandler";
 import { paystack, callPaystack } from "../../Utils/paystack";
 import * as walletService from "./service";
+import * as referralsService from "../Referrals/service";
 import {
   fundWalletSchema,
   listTransactionsQuerySchema,
@@ -73,6 +74,10 @@ export default class WalletController {
       reference,
       wallet.id,
     );
+
+    if (!creditResult.alreadyProcessed) {
+      await referralsService.rewardReferralIfFirstFunding(wallet.id);
+    }
 
     return successResponse({
       res,

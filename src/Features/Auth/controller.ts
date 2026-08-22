@@ -54,7 +54,7 @@ const issueTokens = async (userId: string, email: string) => {
 
 export default class AuthController {
   static async signup(req: Request, res: Response) {
-    const { firstName, lastName, email, password } = validateBody(
+    const { firstName, lastName, email, password, referralCode } = validateBody(
       signupSchema,
       req.body,
     );
@@ -69,6 +69,7 @@ export default class AuthController {
       lastName,
       email,
       password,
+      referralCode,
     });
 
     const genLock = await checkOtpGenerationLock("signup", email);

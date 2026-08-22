@@ -28,6 +28,7 @@ model User {
   kycSubmittedAt     DateTime?
   kycReviewedAt      DateTime?
   kycRejectionReason String?
+  referralCode       String    @unique
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -39,6 +40,8 @@ model User {
   circlesCreated      Circle[]
   circleMemberships   CircleMember[]
   circleContributions CircleContribution[]
+  referralsMade       Referral[]           @relation("ReferrerRelation")
+  referredBy          Referral?            @relation("ReferredRelation")
 }
 
 model Wallet {
@@ -61,6 +64,7 @@ enum TransactionType {
   CIRCLE_PAYOUT
   INVESTMENT_BUY
   INVESTMENT_REDEEM
+  REFERRAL_BONUS
 }
 
 enum TransactionStatus {
@@ -263,4 +267,21 @@ enum KycStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ReferralStatus {
+  PENDING
+  REWARDED
+}
+
+model Referral {
+  id           String         @id @default(uuid())
+  referrerId   String
+  referrer     User           @relation("ReferrerRelation", fields: [referrerId], references: [id])
+  referredId   String         @unique
+  referred     User           @relation("ReferredRelation", fields: [referredId], references: [id])
+  status       ReferralStatus @default(PENDING)
+  rewardAmount BigInt?
+  rewardedAt   DateTime?
+  createdAt    DateTime       @default(now())
 }
