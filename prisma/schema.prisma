@@ -34,14 +34,15 @@ model User {
 
   wallet Wallet?
 
-  savingsPlans        SavingsPlan[]
-  fundHoldings        FundHolding[]
-  fundTransactions    FundTransaction[]
-  circlesCreated      Circle[]
-  circleMemberships   CircleMember[]
-  circleContributions CircleContribution[]
-  referralsMade       Referral[]           @relation("ReferrerRelation")
-  referredBy          Referral?            @relation("ReferredRelation")
+  savingsPlans           SavingsPlan[]
+  fundHoldings           FundHolding[]
+  fundTransactions       FundTransaction[]
+  circlesCreated         Circle[]
+  circleMemberships      CircleMember[]
+  circleContributions    CircleContribution[]
+  notificationRecipients NotificationRecipient[]
+  referralsMade          Referral[]              @relation("ReferrerRelation")
+  referredBy             Referral?               @relation("ReferredRelation")
 }
 
 model Wallet {
@@ -284,4 +285,35 @@ model Referral {
   rewardAmount BigInt?
   rewardedAt   DateTime?
   createdAt    DateTime       @default(now())
+}
+
+enum NotificationType {
+  GENERAL
+  KYC
+  CIRCLE
+  BROADCAST
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  type        NotificationType @default(GENERAL)
+  title       String
+  body        String
+  isBroadcast Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipients NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([notificationId, userId])
 }

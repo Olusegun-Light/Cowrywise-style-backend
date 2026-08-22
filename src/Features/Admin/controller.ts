@@ -3,7 +3,12 @@ import { AppError } from "../../Utils/AppError";
 import { validateBody } from "../../Utils/validateBody";
 import { successResponse } from "../../Utils/responseHandler";
 import * as adminService from "./service";
-import { rejectKycSchema, listUsersQuerySchema } from "./validation";
+import {
+  rejectKycSchema,
+  listUsersQuerySchema,
+  createBroadcastSchema,
+} from "./validation";
+import * as notificationsService from "../Notifications/service";
 
 export default class AdminController {
   static async listPendingKyc(req: Request, res: Response) {
@@ -103,6 +108,23 @@ export default class AdminController {
       res,
       message: "Admin stats retrieved",
       data: stats,
+    });
+  }
+
+  static async sendBroadcast(req: Request, res: Response) {
+    const { title, body } = validateBody(createBroadcastSchema, req.body);
+
+    const notification = await notificationsService.createBroadcast(
+      "BROADCAST",
+      title,
+      body,
+    );
+
+    return successResponse({
+      res,
+      statusCode: 201,
+      message: "Broadcast sent",
+      data: notification,
     });
   }
 }

@@ -35,6 +35,8 @@ import {
   resetPasswordSchema,
 } from "./validation";
 
+import { sendSignupOtpEmail, sendResetOtpEmail } from "../../Utils/mailer";
+
 const refreshTokenKey = (userId: string) => `refresh_token:${userId}`;
 
 const resetTokenKey = (userId: string) => `reset_token:${userId}`;
@@ -84,6 +86,12 @@ export default class AuthController {
 
     const otp = await generateAndStoreOtp("signup", email);
     console.log(`[DEV] Signup OTP for ${email}: ${otp}`);
+
+    try {
+      await sendSignupOtpEmail({ email, firstName: user.firstName, otp });
+    } catch (err) {
+      console.error("Failed to send signup OTP email:", err);
+    }
 
     return successResponse({
       res,
@@ -232,6 +240,12 @@ export default class AuthController {
 
     const otp = await generateAndStoreOtp("reset_password", email);
     console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
+
+    try {
+      await sendResetOtpEmail({ email, firstName: user.firstName, otp });
+    } catch (err) {
+      console.error("Failed to send reset OTP email:", err);
+    }
 
     return successResponse({
       res,

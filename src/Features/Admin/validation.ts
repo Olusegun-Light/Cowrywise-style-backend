@@ -154,3 +154,34 @@ AdminRegistry.registerPath({
     200: { description: "Stats retrieved" },
   },
 });
+
+export const createBroadcastSchema = z.object({
+  title: z.string().min(1).max(200).openapi({
+    example: "Scheduled maintenance",
+  }),
+  body: z.string().min(1).max(2000).openapi({
+    example: "We'll be undergoing maintenance tonight from 11pm-1am WAT.",
+  }),
+});
+
+const CreateBroadcastSchema = AdminRegistry.register(
+  "CreateBroadcastRequest",
+  createBroadcastSchema,
+);
+
+AdminRegistry.registerPath({
+  method: "post",
+  path: "/admin/notifications/broadcast",
+  tags: ["Admin"],
+  summary: "Send a broadcast notification to every user",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateBroadcastSchema } },
+    },
+  },
+  responses: {
+    201: { description: "Broadcast sent" },
+  },
+});

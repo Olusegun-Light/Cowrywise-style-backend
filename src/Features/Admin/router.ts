@@ -26,4 +26,9 @@ router.post(
 
 router.get("/stats", asyncHandler(AdminController.getStats));
 
+router.post(
+  "/notifications/broadcast",
+  asyncHandler(AdminController.sendBroadcast),
+);
+
 export default router;

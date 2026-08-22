@@ -9,6 +9,7 @@ import kycRouter from "../Features/Kyc/router";
 import adminRouter from "../Features/Admin/router";
 import statementsRouter from "../Features/Statements/router";
 import referralsRouter from "../Features/Referrals/router";
+import notificationsRouter from "../Features/Notifications/router";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/kyc", kycRouter);
 router.use("/admin", adminRouter);
 router.use("/statements", statementsRouter);
 router.use("/referrals", referralsRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

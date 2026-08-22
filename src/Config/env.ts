@@ -27,6 +27,11 @@ const envSchema = z.object({
     .positive()
     .default(15 * 60),
   PAYSTACK_SECRET_KEY: z.string().min(1, "Paystack secret key is required"),
+  MAILTRAP_HOST: z.string().min(1),
+  MAILTRAP_PORT: z.coerce.number().int().positive(),
+  MAILTRAP_USER: z.string().min(1),
+  MAILTRAP_PASS: z.string().min(1),
+  MAIL_FROM: z.string().min(1).default("Cowrywise <noreply@cowrywise.test>"),
 });
 
 const parsed = envSchema.safeParse(process.env);

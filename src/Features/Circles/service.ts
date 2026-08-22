@@ -155,6 +155,7 @@ export const contributeToCircle = async (circleId: string, userId: string) => {
     });
 
     let payoutTriggered = false;
+    let recipientUserId: string | undefined;
 
     if (contributionsThisRound === circle.maxMembers) {
       payoutTriggered = true;
@@ -167,6 +168,7 @@ export const contributeToCircle = async (circleId: string, userId: string) => {
       if (!recipient) {
         throw new AppError("Circle payout recipient not found", 500);
       }
+      recipientUserId = recipient.userId;
 
       const payoutAmount =
         circle.contributionAmount * BigInt(circle.maxMembers);
@@ -211,7 +213,7 @@ export const contributeToCircle = async (circleId: string, userId: string) => {
       });
     }
 
-    return { payoutTriggered };
+    return { payoutTriggered, recipientUserId };
   });
 };
 

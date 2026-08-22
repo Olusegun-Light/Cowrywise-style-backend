@@ -1,6 +1,7 @@
 import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
 import type { KycStatus } from "../../generated/prisma/client";
+import * as notificationsService from "../Notifications/service";
 
 export const listPendingKyc = () =>
   prisma.user.findMany({
@@ -24,7 +25,7 @@ export const approveKyc = async (userId: string) => {
     throw new AppError("KYC submission is not pending review", 400);
   }
 
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: {
       kycStatus: "APPROVED",
@@ -33,6 +34,19 @@ export const approveKyc = async (userId: string) => {
     },
     select: { id: true, kycStatus: true, kycReviewedAt: true },
   });
+
+  try {
+    await notificationsService.createNotification(
+      userId,
+      "KYC",
+      "KYC approved",
+      "Your identity verification has been approved.",
+    );
+  } catch (err) {
+    console.error("Failed to create KYC approval notification:", err);
+  }
+
+  return updated;
 };
 
 export const rejectKyc = async (userId: string, reason: string) => {
@@ -44,7 +58,7 @@ export const rejectKyc = async (userId: string, reason: string) => {
     throw new AppError("KYC submission is not pending review", 400);
   }
 
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: {
       kycStatus: "REJECTED",
@@ -58,8 +72,20 @@ export const rejectKyc = async (userId: string, reason: string) => {
       kycRejectionReason: true,
     },
   });
-};
 
+  try {
+    await notificationsService.createNotification(
+      userId,
+      "KYC",
+      "KYC rejected",
+      `Your identity verification was rejected: ${reason}`,
+    );
+  } catch (err) {
+    console.error("Failed to create KYC rejection notification:", err);
+  }
+
+  return updated;
+};
 export const listUsers = async (
   page: number,
   limit: number,

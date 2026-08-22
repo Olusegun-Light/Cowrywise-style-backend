@@ -12,6 +12,7 @@ import { KycRegistry } from "../Features/Kyc/validation";
 import { AdminRegistry } from "../Features/Admin/validation";
 import { StatementsRegistry } from "../Features/Statements/validation";
 import { ReferralsRegistry } from "../Features/Referrals/validation";
+import { NotificationsRegistry } from "../Features/Notifications/validation";
 
 const mainRegistry = new OpenAPIRegistry();
 
@@ -32,6 +33,7 @@ const generator = new OpenApiGeneratorV3([
   ...AdminRegistry.definitions,
   ...StatementsRegistry.definitions,
   ...ReferralsRegistry.definitions,
+  ...NotificationsRegistry.definitions,
 ]);
 
 const openApiDocument = generator.generateDocument({

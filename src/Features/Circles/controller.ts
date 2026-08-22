@@ -4,6 +4,7 @@ import { validateBody } from "../../Utils/validateBody";
 import { successResponse } from "../../Utils/responseHandler";
 import * as circlesService from "./service";
 import { createCircleSchema } from "./validation";
+import * as notificationsService from "../Notifications/service";
 
 export default class CircleController {
   static async createCircle(req: Request, res: Response) {
@@ -54,6 +55,19 @@ export default class CircleController {
       circleId,
       req.user!.id,
     );
+
+    if (result.payoutTriggered && result.recipientUserId) {
+      try {
+        await notificationsService.createNotification(
+          result.recipientUserId,
+          "CIRCLE",
+          "Circle payout received",
+          "Your circle round has completed and the payout has been credited to your wallet.",
+        );
+      } catch (err) {
+        console.error("Failed to create circle payout notification:", err);
+      }
+    }
 
     return successResponse({
       res,
