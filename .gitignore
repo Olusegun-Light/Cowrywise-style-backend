@@ -3,6 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.test
 *.log
 .DS_Store
 
@@ -13,3 +14,5 @@ PLAN.md
 .windsurf
 .vscode
 .qodo
+
+dist-test/
