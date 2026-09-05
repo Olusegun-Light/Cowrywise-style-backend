@@ -1,15 +1,10 @@
-# Note: we deliberately do NOT `include .env` here. Make's `export` copies
-# values verbatim, including quote characters (e.g. DATABASE_URL="postgresql://..."
-# becomes the literal string "postgresql://..." with quotes baked in), which broke
-# Zod's URL validation. The Node app loads .env itself via dotenv, which strips
-# quotes correctly — Make doesn't need to touch it at all.
 NODE_ENV ?= development
 
 PG_DATA := /opt/homebrew/var/postgresql@18
 PG_LOG := /opt/homebrew/var/log/postgresql@18.log
 REDIS_CONF := /opt/homebrew/etc/redis.conf
 
-.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean
+.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean obs-up obs-down obs-logs obs-status
 
 # ===============================
 # SMART COMMANDS
@@ -83,3 +78,22 @@ build:
 clean:
 	@echo "🧹 Removing build output (dist/)..."
 	rm -rf dist
+
+# ===============================
+# OBSERVABILITY (dedicated Loki/Promtail/Grafana stack for this project)
+# ===============================
+
+obs-up:
+	@echo "📈 Starting cowrywise's own app + Loki + Promtail + Grafana stack..."
+	docker compose up -d --build
+
+obs-down:
+	@echo "📈 Stopping cowrywise's observability stack..."
+	docker compose down
+
+obs-logs:
+	@echo "📈 Tailing docker-compose logs (Ctrl+C to stop)..."
+	docker compose logs -f
+
+obs-status:
+	@docker compose ps

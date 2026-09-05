@@ -5,7 +5,7 @@ import { errorResponse } from "../Utils/responseHandler";
 
 export const errorHandler = (
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ) => {
@@ -30,7 +30,7 @@ export const errorHandler = (
   }
 
   // Unexpected/programming error — log full detail, never leak internals to the client
-  console.error("Unhandled error:", err);
+  req.log.error({ err }, "Unhandled error");
   errorResponse({
     res,
     statusCode: 500,

@@ -2,6 +2,7 @@ import { Queue, Worker } from "bullmq";
 import prisma from "../Config/db";
 import { getBullMQConnection } from "../Config/redis";
 import * as savingsService from "../Features/Savings/service";
+import { logger } from "../Utils/logger";
 
 const QUEUE_NAME = "recurringDebit";
 
@@ -62,15 +63,12 @@ export const runRecurringDebits = async () => {
       );
       debited++;
     } catch (err) {
-      console.error(
-        `Recurring debit failed for plan ${plan.id}:`,
-        err instanceof Error ? err.message : err,
-      );
+      logger.error({ err, planId: plan.id }, "Recurring debit failed for plan");
       skipped++;
     }
   }
 
-  console.log(`Recurring debit run: ${debited} debited, ${skipped} skipped`);
+  logger.info({ debited, skipped }, "Recurring debit run completed");
   return { debited, skipped };
 };
 
@@ -84,11 +82,11 @@ export const startRecurringDebitWorker = () => {
   );
 
   worker.on("failed", (job, err) => {
-    console.error("Recurring debit job failed:", err);
+    logger.error({ err, jobId: job?.id }, "Recurring debit job failed");
   });
 
   worker.on("error", (err) => {
-    console.error("Recurring debit worker error:", err);
+    logger.error({ err }, "Recurring debit worker error");
   });
 
   return worker;
@@ -99,5 +97,5 @@ export const scheduleRecurringDebitJob = async () => {
     pattern: "0 1 * * *",
   });
 
-  console.log("Scheduled daily recurring-debit check (1am)");
+  logger.info("Scheduled daily recurring-debit check (1am)");
 };

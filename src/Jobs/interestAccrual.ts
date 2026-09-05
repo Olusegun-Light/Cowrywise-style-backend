@@ -3,6 +3,7 @@ import prisma from "../Config/db";
 import { Prisma } from "../generated/prisma/client";
 import { getBullMQConnection } from "../Config/redis";
 import { getApyForPlanType, type PlanType } from "../Features/Savings/service";
+import { logger } from "../Utils/logger";
 
 const QUEUE_NAME = "interestAccrual";
 
@@ -80,8 +81,9 @@ export const runDailyInterestAccrual = async () => {
   );
 
   const accruedCount = results.filter((r) => r.accrued).length;
-  console.log(
-    `Interest accrual run: ${accruedCount}/${activePlans.length} plans accrued`,
+  logger.info(
+    { accrued: accruedCount, total: activePlans.length },
+    "Interest accrual run completed",
   );
 
   return { total: activePlans.length, accrued: accruedCount };
@@ -97,11 +99,11 @@ export const startInterestAccrualWorker = () => {
   );
 
   worker.on("failed", (job, err) => {
-    console.error("Interest accrual job failed:", err);
+    logger.error({ err, jobId: job?.id }, "Interest accrual job failed");
   });
 
   worker.on("error", (err) => {
-    console.error("Interest accrual worker error:", err);
+    logger.error({ err }, "Interest accrual worker error");
   });
 
   return worker;
@@ -112,5 +114,5 @@ export const scheduleInterestAccrualJob = async () => {
     pattern: "0 0 * * *",
   });
 
-  console.log("Scheduled daily interest accrual job (midnight)");
+  logger.info("Scheduled daily interest accrual job (midnight)");
 };

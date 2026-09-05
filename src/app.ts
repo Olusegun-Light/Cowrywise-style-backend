@@ -1,8 +1,10 @@
+import "./instrument";
 import "./Utils/bigintJson";
 import "express-async-errors";
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import { ZodError } from "zod";
+import * as Sentry from "@sentry/node";
 import { env } from "./Config/env";
 import routes from "./Routes";
 import { errorHandler } from "./Middlewares/errorHandler";
@@ -15,6 +17,8 @@ import { generalRateLimiter } from "./Middlewares/rateLimit";
 import swaggerUi from "swagger-ui-express";
 import { SwaggerTheme, SwaggerThemeNameEnum } from "swagger-themes";
 import openApiDocument from "./Utils/swagger";
+
+import { httpLogger } from "./Middlewares/httpLogger";
 
 const app = express();
 
@@ -53,7 +57,7 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 
 if (env.NODE_ENV !== "test") {
-  app.use(morgan("dev"));
+  app.use(httpLogger);
 }
 
 app.get("/", (_req, res) => {
@@ -78,6 +82,12 @@ app.use((_req, res) => {
     success: false,
     message: "That URL does not exist on this server",
   });
+});
+
+Sentry.setupExpressErrorHandler(app, {
+  shouldHandleError: (err) => {
+    return !(err instanceof AppError) && !(err instanceof ZodError);
+  },
 });
 
 app.use(errorHandler);
