@@ -4,13 +4,13 @@ PG_DATA := /opt/homebrew/var/postgresql@18
 PG_LOG := /opt/homebrew/var/log/postgresql@18.log
 REDIS_CONF := /opt/homebrew/etc/redis.conf
 
-.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean obs-up obs-down obs-logs obs-status
+.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean obs-up obs-down obs-logs obs-status rabbitmq-up rabbitmq-down
 
 # ===============================
 # SMART COMMANDS
 # ===============================
 
-start: db-up redis-up dev
+start: db-up redis-up rabbitmq-up dev
 
 dev:
 	@echo "🚀 Starting API in dev mode (NODE_ENV=$(NODE_ENV))..."
@@ -21,13 +21,14 @@ restart:
 	@pkill -f "ts-node-dev.*src/index.ts" 2>/dev/null || true
 	@$(MAKE) dev
 
-stop: db-down redis-down
+stop: db-down redis-down rabbitmq-down
 	@echo "🛑 Stack stopped."
 
 status:
 	@echo "📊 Service status:"
 	@pg_isready || true
 	@redis-cli ping || true
+	@rabbitmqctl status > /dev/null 2>&1 && echo "RabbitMQ up" || echo "❌ RabbitMQ down"
 
 logs:
 	@echo "📜 Tailing Postgres log (Ctrl+C to stop)..."
@@ -97,3 +98,18 @@ obs-logs:
 
 obs-status:
 	@docker compose ps
+
+
+# ===============================
+# RABBITMQ
+# ===============================
+
+rabbitmq-up:
+	@rabbitmqctl status > /dev/null 2>&1 && echo "✅ RabbitMQ already running" || ( \
+			echo "🐇 Starting RabbitMQ..." && \
+			brew services start rabbitmq \
+	)
+
+rabbitmq-down:
+	@echo "🐇 Stopping RabbitMQ..."
+	@brew services stop rabbitmq || true
