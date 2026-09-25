@@ -213,7 +213,7 @@ export const contributeToCircle = async (circleId: string, userId: string) => {
       });
     }
 
-    return { payoutTriggered, recipientUserId };
+    return { payoutTriggered, recipientUserId, round: circle.currentRound };
   });
 };
 

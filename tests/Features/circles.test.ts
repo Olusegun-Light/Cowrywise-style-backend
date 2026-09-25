@@ -4,6 +4,7 @@ import app from "../../src/app";
 import prisma from "../../src/Config/db";
 import { env } from "../../src/Config/env";
 import { signupAndLogin } from "../helpers/auth";
+import { publishEvent } from "../../src/Utils/eventBus";
 
 const signWebhook = (payload: object) => {
   const body = JSON.stringify(payload);
@@ -77,6 +78,13 @@ describe("Circles full lifecycle", () => {
       .set("Authorization", `Bearer ${bob.accessToken}`)
       .expect(201);
     expect(bobRound1.body.data.payoutTriggered).toBe(true);
+    expect(bobRound1.body.data.round).toBe(1);
+
+    expect(publishEvent).toHaveBeenCalledWith("circle.payout", {
+      userId: alice.userId,
+      circleId,
+      round: 1,
+    });
 
     const aliceWalletAfterR1 = await prisma.wallet.findUniqueOrThrow({
       where: { userId: alice.userId },

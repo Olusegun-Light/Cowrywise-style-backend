@@ -1,7 +1,7 @@
 import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
 import type { AuditAction, KycStatus } from "../../generated/prisma/client";
-import * as notificationsService from "../Notifications/service";
+import { publishEvent } from "../../Utils/eventBus";
 
 export const logAdminAction = (
   adminId: string,
@@ -51,14 +51,9 @@ export const approveKyc = async (userId: string, adminId: string) => {
   ]);
 
   try {
-    await notificationsService.createNotification(
-      userId,
-      "KYC",
-      "KYC approved",
-      "Your identity verification has been approved.",
-    );
+    await publishEvent("kyc.approved", { userId });
   } catch (err) {
-    console.error("Failed to create KYC approval notification:", err);
+    console.error("Failed to publish KYC approval event:", err);
   }
 
   return updated;
@@ -103,14 +98,9 @@ export const rejectKyc = async (
   ]);
 
   try {
-    await notificationsService.createNotification(
-      userId,
-      "KYC",
-      "KYC rejected",
-      `Your identity verification was rejected: ${reason}`,
-    );
+    await publishEvent("kyc.rejected", { userId, reason });
   } catch (err) {
-    console.error("Failed to create KYC rejection notification:", err);
+    console.error("Failed to publish KYC rejection event:", err);
   }
 
   return updated;
