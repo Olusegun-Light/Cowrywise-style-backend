@@ -11,10 +11,9 @@ import { channelWrapper } from "../../src/Config/rabbitmq";
 describe("publishEvent", () => {
   afterEach(() => {
     jest.clearAllMocks();
-    jest.useRealTimers();
   });
 
-  it("publishes to the shared exchange with the given routing key and a persistent, JSON payload", async () => {
+  it("publishes to the shared exchange with a persistent, JSON payload and a bounded timeout", async () => {
     (channelWrapper.publish as jest.Mock).mockResolvedValue(true);
 
     await publishEvent("kyc.approved", { userId: "user-1" });
@@ -23,20 +22,17 @@ describe("publishEvent", () => {
       "cowrywise.events",
       "kyc.approved",
       { userId: "user-1" },
-      { persistent: true },
+      { persistent: true, timeout: 5_000 },
     );
   });
 
-  it("rejects instead of hanging forever if the broker never responds", async () => {
-    jest.useFakeTimers();
-    (channelWrapper.publish as jest.Mock).mockReturnValue(
-      new Promise(() => {}),
+  it("propagates a rejection from the underlying publish call instead of swallowing it", async () => {
+    (channelWrapper.publish as jest.Mock).mockRejectedValue(
+      new Error("timeout"),
     );
 
-    const result = publishEvent("kyc.approved", { userId: "user-1" });
-    const assertion = expect(result).rejects.toThrow(/timed out/);
-
-    await jest.advanceTimersByTimeAsync(5_000);
-    await assertion;
+    await expect(
+      publishEvent("kyc.approved", { userId: "user-1" }),
+    ).rejects.toThrow("timeout");
   });
 });

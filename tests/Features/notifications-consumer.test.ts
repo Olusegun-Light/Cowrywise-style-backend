@@ -5,8 +5,12 @@ jest.mock("../../src/Config/rabbitmq", () => ({
   NOTIFICATIONS_QUEUE: "notifications.events",
 }));
 
-import { handleMessage } from "../../src/Features/Notifications/consumer";
+import {
+  handleMessage,
+  startNotificationEventConsumer,
+} from "../../src/Features/Notifications/consumer";
 import * as notificationsService from "../../src/Features/Notifications/service";
+import { channelWrapper } from "../../src/Config/rabbitmq";
 
 describe("Notifications event consumer — handleMessage", () => {
   afterEach(() => {
@@ -58,6 +62,79 @@ describe("Notifications event consumer — handleMessage", () => {
       handleMessage("some.future.event", { anything: true }),
     ).resolves.toBeUndefined();
 
+    expect(notificationsService.createNotification).not.toHaveBeenCalled();
+  });
+});
+
+describe("startNotificationEventConsumer — ack/nack wiring", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const getMessageHandler = async () => {
+    await startNotificationEventConsumer();
+    const setupFn = (channelWrapper.addSetup as jest.Mock).mock.calls[0][0];
+    const consume = jest.fn();
+    const channel = { consume, ack: jest.fn(), nack: jest.fn() };
+    await setupFn(channel);
+    const onMessage = consume.mock.calls[0][1];
+    return { channel, onMessage };
+  };
+
+  it("acks after successfully processing a valid message", async () => {
+    (notificationsService.createNotification as jest.Mock).mockResolvedValue(
+      undefined,
+    );
+    const { channel, onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from(JSON.stringify({ userId: "user-1" })),
+      fields: { routingKey: "kyc.approved" },
+    };
+
+    await onMessage(msg);
+
+    expect(channel.ack).toHaveBeenCalledWith(msg);
+    expect(channel.nack).not.toHaveBeenCalled();
+  });
+
+  it("nacks without requeue when the handler throws", async () => {
+    (notificationsService.createNotification as jest.Mock).mockRejectedValue(
+      new Error("db error"),
+    );
+    const { channel, onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from(JSON.stringify({ userId: "user-1" })),
+      fields: { routingKey: "kyc.approved" },
+    };
+
+    await onMessage(msg);
+
+    expect(channel.nack).toHaveBeenCalledWith(msg, false, false);
+    expect(channel.ack).not.toHaveBeenCalled();
+  });
+
+  it("nacks on invalid JSON payload", async () => {
+    const { channel, onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from("not valid json"),
+      fields: { routingKey: "kyc.approved" },
+    };
+
+    await onMessage(msg);
+
+    expect(channel.nack).toHaveBeenCalledWith(msg, false, false);
+  });
+
+  it("acks an unrecognized routing key without calling createNotification", async () => {
+    const { channel, onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from(JSON.stringify({})),
+      fields: { routingKey: "some.other.event" },
+    };
+
+    await onMessage(msg);
+
+    expect(channel.ack).toHaveBeenCalledWith(msg);
     expect(notificationsService.createNotification).not.toHaveBeenCalled();
   });
 });
