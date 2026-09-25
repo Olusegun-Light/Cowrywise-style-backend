@@ -1,5 +1,10 @@
 jest.mock("../../src/Features/Notifications/service");
 
+jest.mock("../../src/Config/rabbitmq", () => ({
+  channelWrapper: { addSetup: jest.fn() },
+  NOTIFICATIONS_QUEUE: "notifications.events",
+}));
+
 import { handleMessage } from "../../src/Features/Notifications/consumer";
 import * as notificationsService from "../../src/Features/Notifications/service";
 
