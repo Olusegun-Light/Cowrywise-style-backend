@@ -1,11 +1,13 @@
 import app from "./app";
 import { env } from "./Config/env";
 import { startRedisClient } from "./Config/redis";
+import { startRabbitMQ } from "./Config/rabbitmq";
 import { startCronService } from "./Jobs";
 import { initializeDefaultRoles } from "./Config/initializeRoles";
 
 const start = async () => {
   await startRedisClient();
+  await startRabbitMQ();
   await startCronService();
   await initializeDefaultRoles();
 

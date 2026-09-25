@@ -1,0 +1,1 @@
+export const publishEvent = jest.fn().mockResolvedValue(undefined);
