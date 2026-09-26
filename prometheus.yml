@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "cowrywise-backend"
+    static_configs:
+      - targets: ["cowrywise-backend-dev:3000"]
