@@ -10,6 +10,7 @@ import {
   listAuditLogQuerySchema,
 } from "./validation";
 import * as notificationsService from "../Notifications/service";
+import { logger } from "../../Utils/logger";
 
 export default class AdminController {
   static async listPendingKyc(req: Request, res: Response) {
@@ -129,7 +130,7 @@ export default class AdminController {
         { title },
       );
     } catch (err) {
-      console.error("Failed to log broadcast audit entry:", err);
+      logger.error({ err }, "Failed to log broadcast audit entry");
     }
 
     return successResponse({

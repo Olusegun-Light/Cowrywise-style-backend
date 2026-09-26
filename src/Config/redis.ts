@@ -1,13 +1,14 @@
 import { createClient } from "redis";
 import { env } from "./env";
+import { logger } from "../Utils/logger";
 
 export const redisClient = createClient({ url: env.REDIS_URL });
 
-redisClient.on("error", (err) => console.error("Redis Client Error", err));
+redisClient.on("error", (err) => logger.error({ err }, "Redis Client Error"));
 
 export const startRedisClient = async () => {
   await redisClient.connect();
-  console.log("Redis is connected");
+  logger.info("Redis is connected");
 };
 
 export const getBullMQConnection = () => {

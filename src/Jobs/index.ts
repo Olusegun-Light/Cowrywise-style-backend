@@ -6,6 +6,7 @@ import {
   startRecurringDebitWorker,
   scheduleRecurringDebitJob,
 } from "./recurringDebit";
+import { logger } from "../Utils/logger";
 
 export const startCronService = async () => {
   startInterestAccrualWorker();
@@ -14,5 +15,5 @@ export const startCronService = async () => {
   startRecurringDebitWorker();
   await scheduleRecurringDebitJob();
 
-  console.log("BullMQ cron service started");
+  logger.info("BullMQ cron service started");
 };

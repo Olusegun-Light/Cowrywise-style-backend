@@ -5,6 +5,7 @@ import { successResponse } from "../../Utils/responseHandler";
 import * as circlesService from "./service";
 import { createCircleSchema } from "./validation";
 import { publishEvent } from "../../Utils/eventBus";
+import { logger } from "../../Utils/logger";
 
 export default class CircleController {
   static async createCircle(req: Request, res: Response) {
@@ -64,7 +65,7 @@ export default class CircleController {
           round: result.round,
         });
       } catch (err) {
-        console.error("Failed to publish circle payout event:", err);
+        logger.error({ err }, "Failed to publish circle payout event");
       }
     }
 

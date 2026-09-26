@@ -2,6 +2,7 @@ import prisma from "../../Config/db";
 import { AppError } from "../../Utils/AppError";
 import type { AuditAction, KycStatus } from "../../generated/prisma/client";
 import { publishEvent } from "../../Utils/eventBus";
+import { logger } from "../../Utils/logger";
 
 export const logAdminAction = (
   adminId: string,
@@ -53,7 +54,7 @@ export const approveKyc = async (userId: string, adminId: string) => {
   try {
     await publishEvent("kyc.approved", { userId });
   } catch (err) {
-    console.error("Failed to publish KYC approval event:", err);
+    logger.error({ err }, "Failed to publish KYC approval event");
   }
 
   return updated;
@@ -100,7 +101,7 @@ export const rejectKyc = async (
   try {
     await publishEvent("kyc.rejected", { userId, reason });
   } catch (err) {
-    console.error("Failed to publish KYC rejection event:", err);
+    logger.error({ err }, "Failed to publish KYC rejection event");
   }
 
   return updated;

@@ -1,5 +1,6 @@
 import app from "./app";
 import { env } from "./Config/env";
+import { logger } from "./Utils/logger";
 import { startRedisClient } from "./Config/redis";
 import { startRabbitMQ } from "./Config/rabbitmq";
 import { startElasticsearch } from "./Config/elasticsearch";
@@ -18,17 +19,17 @@ const start = async () => {
   await initializeDefaultRoles();
 
   app.listen(env.PORT, () => {
-    console.log(`Server running at http://localhost:${env.PORT}`);
+    logger.info(`Server running at http://localhost:${env.PORT}`);
   });
 };
 
 start();
 
 process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled promise rejection:", reason);
+  logger.error({ reason }, "Unhandled promise rejection");
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught exception:", err);
+  logger.error({ err }, "Uncaught exception");
   process.exit(1);
 });

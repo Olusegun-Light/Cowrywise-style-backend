@@ -35,6 +35,9 @@ import {
   resetPasswordSchema,
 } from "./validation";
 
+import { publishEvent } from "../../Utils/eventBus";
+import { logger } from "../../Utils/logger";
+
 import { sendSignupOtpEmail, sendResetOtpEmail } from "../../Utils/mailer";
 
 const refreshTokenKey = (userId: string) => `refresh_token:${userId}`;
@@ -74,6 +77,12 @@ export default class AuthController {
       referralCode,
     });
 
+    try {
+      await publishEvent("search.user.upsert", { userId: user.id });
+    } catch (err) {
+      logger.error({ err }, "Failed to publish search index event");
+    }
+
     const genLock = await checkOtpGenerationLock("signup", email);
     if (genLock.isLocked) {
       throw new AppError(
@@ -85,12 +94,12 @@ export default class AuthController {
     await recordOtpGenerationAttempt("signup", email);
 
     const otp = await generateAndStoreOtp("signup", email);
-    console.log(`[DEV] Signup OTP for ${email}: ${otp}`);
+    logger.debug(`[DEV] Signup OTP for ${email}: ${otp}`);
 
     try {
       await sendSignupOtpEmail({ email, firstName: user.firstName, otp });
     } catch (err) {
-      console.error("Failed to send signup OTP email:", err);
+      logger.error({ err }, "Failed to send signup OTP email");
     }
 
     return successResponse({
@@ -239,12 +248,12 @@ export default class AuthController {
     await recordOtpGenerationAttempt("reset_password", email);
 
     const otp = await generateAndStoreOtp("reset_password", email);
-    console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
+    logger.debug(`[DEV] Password reset OTP for ${email}: ${otp}`);
 
     try {
       await sendResetOtpEmail({ email, firstName: user.firstName, otp });
     } catch (err) {
-      console.error("Failed to send reset OTP email:", err);
+      logger.error({ err }, "Failed to send reset OTP email");
     }
 
     return successResponse({

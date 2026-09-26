@@ -1,5 +1,6 @@
 import prisma from "./db";
 import { RoleEnum } from "../Utils/roles";
+import { logger } from "../Utils/logger";
 
 const DEFAULT_ROLES = [
   { name: RoleEnum.ADMIN, description: "Full administrative access" },
@@ -15,5 +16,5 @@ export const initializeDefaultRoles = async () => {
     });
   }
 
-  console.log("Default roles initialized");
+  logger.info("Default roles initialized");
 };
