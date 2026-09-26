@@ -40,6 +40,7 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true"),
+  ELASTICSEARCH_URL: z.string().url().default("http://localhost:9200"),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -65,6 +65,21 @@ services:
     networks:
       - cowrywise-backend-dev
 
+  elasticsearch:
+    image: elasticsearch:9.0.0
+    container_name: cowrywise-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - cowrywise-backend-dev
+
   promtail:
     image: grafana/promtail:latest
     container_name: cowrywise-promtail
@@ -105,3 +120,4 @@ volumes:
   loki_data:
   grafana_data:
   prometheus_data:
+  elasticsearch_data:
