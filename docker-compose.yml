@@ -12,6 +12,7 @@ services:
       - REDIS_URL=redis://host.docker.internal:6379
       - RABBITMQ_URL=amqp://guest:guest@host.docker.internal:5672
       - TRUST_PROXY=true
+      - PORT=3000
     volumes:
       - .:/app
       - /app/node_modules
