@@ -1,24 +1,20 @@
 import type { NextFunction, Request, Response } from "express";
 import { httpRequestDuration, httpRequestTotal } from "../Utils/metrics";
 
+const UNMATCHED_ROUTE_LABEL = "<unmatched>";
+
 const buildRouteLabel = (req: Request): string => {
   if (!req.route) {
-    return req.path;
+    return UNMATCHED_ROUTE_LABEL;
   }
 
-  const routePath: string = req.route.path;
-  const pathnameOnly = req.originalUrl.split("?")[0] ?? req.originalUrl;
-
-  const escaped = routePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = escaped.replace(/:[^/\\]+/g, "[^/]+");
-  const regex = new RegExp(`${pattern}$`);
-  const match = pathnameOnly.match(regex);
-
-  if (!match) {
-    return `${req.baseUrl}${routePath}`;
+  const routePath = req.route.path;
+  if (typeof routePath !== "string") {
+    return "<complex>";
   }
 
-  return pathnameOnly.slice(0, match.index) + routePath;
+  const baseUrl = req.metricsBaseUrl ?? req.baseUrl;
+  return routePath === "/" ? baseUrl || "/" : `${baseUrl}${routePath}`;
 };
 
 export const httpMetrics = (

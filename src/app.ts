@@ -25,6 +25,7 @@ import { register } from "./Utils/metrics";
 const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
+app.use(httpMetrics);
 
 const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
 
@@ -61,8 +62,6 @@ app.use(express.urlencoded({ extended: true }));
 if (env.NODE_ENV !== "test") {
   app.use(httpLogger);
 }
-
-app.use(httpMetrics);
 
 app.get("/", (_req, res) => {
   successResponse({ res, message: "Welcome to Cowrywise API. Use /api/v1" });

@@ -7,6 +7,7 @@ declare global {
         role: string | null;
       };
       rawBody?: Buffer;
+      metricsBaseUrl?: string;
     }
   }
 }

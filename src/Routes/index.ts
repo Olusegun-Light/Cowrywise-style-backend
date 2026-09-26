@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { NextFunction, Request, Response } from "express";
 import authRouter from "../Features/Auth/router";
 import walletRouter from "../Features/Wallet/router";
 import webhookRouter from "../Features/Webhook/router";
@@ -13,16 +14,25 @@ import notificationsRouter from "../Features/Notifications/router";
 
 const router = Router();
 
-router.use("/auth", authRouter);
-router.use("/wallet", walletRouter);
-router.use("/webhook", webhookRouter);
-router.use("/savings", savingsRouter);
-router.use("/funds", investmentsRouter);
-router.use("/circles", circlesRouter);
-router.use("/kyc", kycRouter);
-router.use("/admin", adminRouter);
-router.use("/statements", statementsRouter);
-router.use("/referrals", referralsRouter);
-router.use("/notifications", notificationsRouter);
+// Captures req.baseUrl the instant it reflects this specific mount point —
+// unlike reading req.baseUrl later (e.g. in an error handler), this value
+// survives Express's error-propagation unwind, since it's a plain property
+// we set once, not something Express itself mutates afterward.
+const captureBaseUrl = (req: Request, _res: Response, next: NextFunction) => {
+  req.metricsBaseUrl = req.baseUrl;
+  next();
+};
+
+router.use("/auth", captureBaseUrl, authRouter);
+router.use("/wallet", captureBaseUrl, walletRouter);
+router.use("/webhook", captureBaseUrl, webhookRouter);
+router.use("/savings", captureBaseUrl, savingsRouter);
+router.use("/funds", captureBaseUrl, investmentsRouter);
+router.use("/circles", captureBaseUrl, circlesRouter);
+router.use("/kyc", captureBaseUrl, kycRouter);
+router.use("/admin", captureBaseUrl, adminRouter);
+router.use("/statements", captureBaseUrl, statementsRouter);
+router.use("/referrals", captureBaseUrl, referralsRouter);
+router.use("/notifications", captureBaseUrl, notificationsRouter);
 
 export default router;

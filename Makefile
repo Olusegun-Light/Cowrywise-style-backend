@@ -85,7 +85,7 @@ clean:
 # ===============================
 
 obs-up:
-	@echo "📈 Starting cowrywise's own app + Loki + Promtail + Grafana stack..."
+	@echo "📈 Starting cowrywise's own app + Loki + Promtail + Prometheus + Grafana stack..."
 	docker compose up -d --build
 
 obs-down:

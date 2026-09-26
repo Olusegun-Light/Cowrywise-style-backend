@@ -1,5 +1,4 @@
-import { withJobMetrics } from "../../src/Utils/metrics";
-import { jobDuration, jobTotal } from "../../src/Utils/metrics";
+import { withJobMetrics, jobDuration, jobTotal } from "../../src/Utils/metrics";
 
 describe("withJobMetrics", () => {
   it("records success and returns the wrapped function's result", async () => {

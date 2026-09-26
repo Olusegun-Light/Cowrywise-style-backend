@@ -5,8 +5,8 @@ describe("httpMetrics middleware", () => {
   const makeReq = (overrides: Record<string, unknown> = {}) => ({
     method: "POST",
     path: "/api/v1/circles/abc123/contribute",
-    originalUrl: "/api/v1/circles/abc123/contribute",
     baseUrl: "/api/v1/circles",
+    metricsBaseUrl: "/api/v1/circles",
     route: { path: "/:circleId/contribute" },
     ...overrides,
   });
@@ -22,7 +22,7 @@ describe("httpMetrics middleware", () => {
     };
   };
 
-  it("records the matched route pattern, not the raw URL, on a successful request", async () => {
+  it("records the matched route pattern using the eagerly-captured metricsBaseUrl", async () => {
     const observeSpy = jest.spyOn(httpRequestDuration, "observe");
     const incSpy = jest.spyOn(httpRequestTotal, "inc");
     const req = makeReq();
@@ -49,37 +49,9 @@ describe("httpMetrics middleware", () => {
     incSpy.mockRestore();
   });
 
-  it("falls back to the raw path (never undefined) when no route was matched, e.g. a 404", async () => {
+  it("still resolves correctly using metricsBaseUrl even if baseUrl itself was reset (simulating Express's error-unwind)", async () => {
     const incSpy = jest.spyOn(httpRequestTotal, "inc");
-    const req = makeReq({
-      route: undefined,
-      baseUrl: "",
-      path: "/does/not/exist",
-      originalUrl: "/does/not/exist",
-    });
-    const res = { ...makeRes(), statusCode: 404 };
-
-    httpMetrics(req as never, res as never, () => {});
-    res._fireFinish();
-
-    expect(incSpy).toHaveBeenCalledWith({
-      method: "POST",
-      route: "/does/not/exist",
-      status_code: 404,
-    });
-
-    incSpy.mockRestore();
-  });
-
-  it("reconstructs the full route pattern from originalUrl even when baseUrl was reset by Express's error-handling unwind", async () => {
-    const incSpy = jest.spyOn(httpRequestTotal, "inc");
-    // This simulates the real, confirmed Express behavior: when an error
-    // propagates to a top-level error handler, req.baseUrl is reset to ""
-    // even though req.route and req.originalUrl remain correct.
-    const req = makeReq({
-      baseUrl: "",
-      originalUrl: "/api/v1/circles/abc123/contribute?foo=bar",
-    });
+    const req = makeReq({ baseUrl: "" });
     const res = { ...makeRes(), statusCode: 500 };
 
     httpMetrics(req as never, res as never, () => {});
@@ -89,6 +61,47 @@ describe("httpMetrics middleware", () => {
       method: "POST",
       route: "/api/v1/circles/:circleId/contribute",
       status_code: 500,
+    });
+
+    incSpy.mockRestore();
+  });
+
+  it("collapses a root-route match to just the mount prefix, not a trailing slash", async () => {
+    const incSpy = jest.spyOn(httpRequestTotal, "inc");
+    const req = makeReq({
+      route: { path: "/" },
+      metricsBaseUrl: "/api/v1/circles",
+    });
+    const res = { ...makeRes(), statusCode: 422 };
+
+    httpMetrics(req as never, res as never, () => {});
+    res._fireFinish();
+
+    expect(incSpy).toHaveBeenCalledWith({
+      method: "POST",
+      route: "/api/v1/circles",
+      status_code: 422,
+    });
+
+    incSpy.mockRestore();
+  });
+
+  it("uses a bounded placeholder, never the raw path, when no route was matched at all", async () => {
+    const incSpy = jest.spyOn(httpRequestTotal, "inc");
+    const req = makeReq({
+      route: undefined,
+      metricsBaseUrl: undefined,
+      path: "/does/not/exist",
+    });
+    const res = { ...makeRes(), statusCode: 404 };
+
+    httpMetrics(req as never, res as never, () => {});
+    res._fireFinish();
+
+    expect(incSpy).toHaveBeenCalledWith({
+      method: "POST",
+      route: "<unmatched>",
+      status_code: 404,
     });
 
     incSpy.mockRestore();

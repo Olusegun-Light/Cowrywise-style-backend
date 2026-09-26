@@ -65,11 +65,11 @@ export const startNotificationEventConsumer = async () => {
         try {
           const payload = JSON.parse(msg.content.toString());
           await handleMessage(msg.fields.routingKey, payload);
-          channel.ack(msg);
           rabbitmqConsumeDuration.observe(
             { routing_key: msg.fields.routingKey, status: "success" },
             Number(process.hrtime.bigint() - start) / 1e9,
           );
+          channel.ack(msg);
         } catch (err) {
           logger.error(
             { err, routingKey: msg.fields.routingKey },
