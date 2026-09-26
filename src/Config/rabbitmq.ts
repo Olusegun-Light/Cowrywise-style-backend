@@ -13,6 +13,10 @@ export const NOTIFICATION_ROUTING_KEYS = [
   "kyc.rejected",
 ] as const;
 
+export const SEARCH_USERS_QUEUE = "search.users.events";
+export const SEARCH_USERS_DLQ = "search.users.events.dlq";
+export const SEARCH_ROUTING_KEYS = ["search.user.upsert"] as const;
+
 const CONNECT_TIMEOUT_MS = 10_000;
 
 const connection = amqp.connect([env.RABBITMQ_URL]);
@@ -44,6 +48,20 @@ export const channelWrapper: ChannelWrapper = connection.createChannel({
 
     for (const key of NOTIFICATION_ROUTING_KEYS) {
       await channel.bindQueue(NOTIFICATIONS_QUEUE, EXCHANGE, key);
+    }
+
+    await channel.assertQueue(SEARCH_USERS_DLQ, { durable: true });
+    await channel.bindQueue(SEARCH_USERS_DLQ, DEAD_LETTER_EXCHANGE, "");
+
+    await channel.assertQueue(SEARCH_USERS_QUEUE, {
+      durable: true,
+      arguments: {
+        "x-dead-letter-exchange": DEAD_LETTER_EXCHANGE,
+      },
+    });
+
+    for (const key of SEARCH_ROUTING_KEYS) {
+      await channel.bindQueue(SEARCH_USERS_QUEUE, EXCHANGE, key);
     }
   },
 });
