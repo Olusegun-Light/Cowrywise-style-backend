@@ -4,7 +4,7 @@ PG_DATA := /opt/homebrew/var/postgresql@18
 PG_LOG := /opt/homebrew/var/log/postgresql@18.log
 REDIS_CONF := /opt/homebrew/etc/redis.conf
 
-.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean obs-up obs-down obs-logs obs-status rabbitmq-up rabbitmq-down
+.PHONY: start dev restart stop db-up db-down redis-up redis-down status logs db-shell migrate build clean obs-up obs-down obs-logs obs-status rabbitmq-up rabbitmq-down search-backfill
 
 # ===============================
 # SMART COMMANDS
@@ -99,6 +99,9 @@ obs-logs:
 obs-status:
 	@docker compose ps
 
+search-backfill:
+	@echo "🔎 Backfilling Elasticsearch indices from Postgres..."
+	npx ts-node scripts/backfillSearchIndex.ts
 
 # ===============================
 # RABBITMQ

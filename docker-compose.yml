@@ -11,6 +11,7 @@ services:
       - DATABASE_URL=postgresql://postgres@host.docker.internal:5432/cowrywise_dev?schema=public
       - REDIS_URL=redis://host.docker.internal:6379
       - RABBITMQ_URL=amqp://guest:guest@host.docker.internal:5672
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
       - TRUST_PROXY=true
       - PORT=3000
     volumes:
@@ -66,7 +67,7 @@ services:
       - cowrywise-backend-dev
 
   elasticsearch:
-    image: elasticsearch:9.0.0
+    image: elastic/elasticsearch:9.0.0
     container_name: cowrywise-elasticsearch
     restart: unless-stopped
     environment:
