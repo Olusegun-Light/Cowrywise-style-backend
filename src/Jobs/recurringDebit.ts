@@ -3,6 +3,7 @@ import prisma from "../Config/db";
 import { getBullMQConnection } from "../Config/redis";
 import * as savingsService from "../Features/Savings/service";
 import { logger } from "../Utils/logger";
+import { withJobMetrics } from "../Utils/metrics";
 
 const QUEUE_NAME = "recurringDebit";
 
@@ -75,9 +76,7 @@ export const runRecurringDebits = async () => {
 export const startRecurringDebitWorker = () => {
   const worker = new Worker(
     QUEUE_NAME,
-    async () => {
-      await runRecurringDebits();
-    },
+    withJobMetrics("recurringDebit", runRecurringDebits),
     { connection: getBullMQConnection() },
   );
 

@@ -4,6 +4,7 @@ import { Prisma } from "../generated/prisma/client";
 import { getBullMQConnection } from "../Config/redis";
 import { getApyForPlanType, type PlanType } from "../Features/Savings/service";
 import { logger } from "../Utils/logger";
+import { withJobMetrics } from "../Utils/metrics";
 
 const QUEUE_NAME = "interestAccrual";
 
@@ -92,9 +93,7 @@ export const runDailyInterestAccrual = async () => {
 export const startInterestAccrualWorker = () => {
   const worker = new Worker(
     QUEUE_NAME,
-    async () => {
-      await runDailyInterestAccrual();
-    },
+    withJobMetrics("interestAccrual", runDailyInterestAccrual),
     { connection: getBullMQConnection() },
   );
 

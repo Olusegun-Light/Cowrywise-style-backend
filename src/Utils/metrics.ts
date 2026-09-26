@@ -48,3 +48,30 @@ export const rabbitmqConsumeDuration = new client.Histogram({
   labelNames: ["routing_key", "status"],
   registers: [register],
 });
+
+export const withJobMetrics = <T>(
+  jobName: string,
+  fn: () => Promise<T>,
+): (() => Promise<T>) => {
+  return async () => {
+    const start = process.hrtime.bigint();
+    try {
+      const result = await fn();
+      const durationSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+      jobDuration.observe(
+        { job_name: jobName, status: "success" },
+        durationSeconds,
+      );
+      jobTotal.inc({ job_name: jobName, status: "success" });
+      return result;
+    } catch (err) {
+      const durationSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+      jobDuration.observe(
+        { job_name: jobName, status: "failure" },
+        durationSeconds,
+      );
+      jobTotal.inc({ job_name: jobName, status: "failure" });
+      throw err;
+    }
+  };
+};
