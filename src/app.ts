@@ -19,6 +19,8 @@ import { SwaggerTheme, SwaggerThemeNameEnum } from "swagger-themes";
 import openApiDocument from "./Utils/swagger";
 
 import { httpLogger } from "./Middlewares/httpLogger";
+import { httpMetrics } from "./Middlewares/metrics";
+import { register } from "./Utils/metrics";
 
 const app = express();
 
@@ -60,6 +62,8 @@ if (env.NODE_ENV !== "test") {
   app.use(httpLogger);
 }
 
+app.use(httpMetrics);
+
 app.get("/", (_req, res) => {
   successResponse({ res, message: "Welcome to Cowrywise API. Use /api/v1" });
 });
@@ -67,6 +71,11 @@ app.get("/", (_req, res) => {
 app.get("/health", async (_req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   successResponse({ res, message: "ok", data: { db: "connected" } });
+});
+
+app.get("/metrics", async (_req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
 });
 
 app.use(
