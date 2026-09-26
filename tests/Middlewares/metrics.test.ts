@@ -5,6 +5,7 @@ describe("httpMetrics middleware", () => {
   const makeReq = (overrides: Record<string, unknown> = {}) => ({
     method: "POST",
     path: "/api/v1/circles/abc123/contribute",
+    originalUrl: "/api/v1/circles/abc123/contribute",
     baseUrl: "/api/v1/circles",
     route: { path: "/:circleId/contribute" },
     ...overrides,
@@ -54,6 +55,7 @@ describe("httpMetrics middleware", () => {
       route: undefined,
       baseUrl: "",
       path: "/does/not/exist",
+      originalUrl: "/does/not/exist",
     });
     const res = { ...makeRes(), statusCode: 404 };
 
@@ -64,6 +66,29 @@ describe("httpMetrics middleware", () => {
       method: "POST",
       route: "/does/not/exist",
       status_code: 404,
+    });
+
+    incSpy.mockRestore();
+  });
+
+  it("reconstructs the full route pattern from originalUrl even when baseUrl was reset by Express's error-handling unwind", async () => {
+    const incSpy = jest.spyOn(httpRequestTotal, "inc");
+    // This simulates the real, confirmed Express behavior: when an error
+    // propagates to a top-level error handler, req.baseUrl is reset to ""
+    // even though req.route and req.originalUrl remain correct.
+    const req = makeReq({
+      baseUrl: "",
+      originalUrl: "/api/v1/circles/abc123/contribute?foo=bar",
+    });
+    const res = { ...makeRes(), statusCode: 500 };
+
+    httpMetrics(req as never, res as never, () => {});
+    res._fireFinish();
+
+    expect(incSpy).toHaveBeenCalledWith({
+      method: "POST",
+      route: "/api/v1/circles/:circleId/contribute",
+      status_code: 500,
     });
 
     incSpy.mockRestore();
