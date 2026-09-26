@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../Utils/AppError";
 import { errorResponse } from "../Utils/responseHandler";
+import { logger } from "../Utils/logger";
 
 export const errorHandler = (
   err: Error,
@@ -30,7 +31,8 @@ export const errorHandler = (
   }
 
   // Unexpected/programming error — log full detail, never leak internals to the client
-  req.log.error({ err }, "Unhandled error");
+  // req.log is only attached by httpLogger, which is skipped in test (NODE_ENV=test)
+  (req.log ?? logger).error({ err }, "Unhandled error");
   errorResponse({
     res,
     statusCode: 500,

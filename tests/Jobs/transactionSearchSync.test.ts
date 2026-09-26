@@ -37,6 +37,7 @@ const fundWallet = async (accessToken: string, amountKobo: number) => {
 describe("runTransactionSearchSync", () => {
   afterEach(() => {
     jest.clearAllMocks();
+    (searchService.indexTransaction as jest.Mock).mockReset();
   });
   afterAll(async () => {
     await transactionSearchSyncQueue.close();
@@ -55,6 +56,29 @@ describe("runTransactionSearchSync", () => {
     const [transactionArg, userArg] = call!;
     expect(transactionArg.type).toBe("FUNDING");
     expect(userArg.email).toBe(user.user.email);
+  });
+
+  it("continues indexing remaining transactions after one fails", async () => {
+    const userA = await signupAndLogin();
+    const userB = await signupAndLogin();
+    await fundWallet(userA.accessToken, 100000);
+    await fundWallet(userB.accessToken, 200000);
+
+    (searchService.indexTransaction as jest.Mock).mockImplementation(
+      (_txn, user) => {
+        if (user.id === userA.userId) {
+          return Promise.reject(new Error("ES index failure"));
+        }
+        return Promise.resolve();
+      },
+    );
+
+    await runTransactionSearchSync();
+
+    const calledForB = (
+      searchService.indexTransaction as jest.Mock
+    ).mock.calls.some(([, userArg]) => userArg.id === userB.userId);
+    expect(calledForB).toBe(true);
   });
 
   it("does not index transactions outside the rolling window", async () => {

@@ -18,6 +18,9 @@ services:
       - .:/app
       - /app/node_modules
     command: npm run dev
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     logging:
       driver: "json-file"
       options:
@@ -78,6 +81,11 @@ services:
       - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     networks:
       - cowrywise-backend-dev
 

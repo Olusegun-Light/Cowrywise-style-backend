@@ -1,8 +1,10 @@
+import { errors as esErrors } from "@elastic/elasticsearch";
 import {
   esClient,
   USERS_INDEX,
   TRANSACTIONS_INDEX,
 } from "../../Config/elasticsearch";
+import { AppError } from "../../Utils/AppError";
 
 type IndexableUser = {
   id: string;
@@ -65,31 +67,45 @@ export const indexTransaction = async (
   });
 };
 
+const asSearchUnavailableError = (err: unknown) => {
+  if (err instanceof esErrors.ElasticsearchClientError) {
+    return new AppError("Search is temporarily unavailable", 503);
+  }
+  return err;
+};
+
 export const searchUsers = async (
   query: string,
   page: number,
   limit: number,
 ) => {
-  const res = await esClient.search({
-    index: USERS_INDEX,
-    from: (page - 1) * limit,
-    size: limit,
-    query: {
-      multi_match: {
-        query,
-        fields: ["firstName", "lastName", "email"],
-        fuzziness: "AUTO",
+  try {
+    const res = await esClient.search({
+      index: USERS_INDEX,
+      from: (page - 1) * limit,
+      size: limit,
+      query: {
+        multi_match: {
+          query,
+          fields: ["firstName", "lastName", "email"],
+          fuzziness: "AUTO",
+        },
       },
-    },
-  });
+    });
 
-  return {
-    results: res.hits.hits.map((hit) => hit._source),
-    total:
-      typeof res.hits.total === "number"
-        ? res.hits.total
-        : (res.hits.total?.value ?? 0),
-  };
+    return {
+      results: res.hits.hits.map((hit) => ({
+        id: hit._id,
+        ...(hit._source as Record<string, unknown>),
+      })),
+      total:
+        typeof res.hits.total === "number"
+          ? res.hits.total
+          : (res.hits.total?.value ?? 0),
+    };
+  } catch (err) {
+    throw asSearchUnavailableError(err);
+  }
 };
 
 export const searchTransactions = async (
@@ -97,24 +113,31 @@ export const searchTransactions = async (
   page: number,
   limit: number,
 ) => {
-  const res = await esClient.search({
-    index: TRANSACTIONS_INDEX,
-    from: (page - 1) * limit,
-    size: limit,
-    query: {
-      multi_match: {
-        query,
-        fields: ["providerReference", "userName", "userEmail"],
-        fuzziness: "AUTO",
+  try {
+    const res = await esClient.search({
+      index: TRANSACTIONS_INDEX,
+      from: (page - 1) * limit,
+      size: limit,
+      query: {
+        multi_match: {
+          query,
+          fields: ["providerReference", "userName", "userEmail"],
+          fuzziness: "AUTO",
+        },
       },
-    },
-  });
+    });
 
-  return {
-    results: res.hits.hits.map((hit) => hit._source),
-    total:
-      typeof res.hits.total === "number"
-        ? res.hits.total
-        : (res.hits.total?.value ?? 0),
-  };
+    return {
+      results: res.hits.hits.map((hit) => ({
+        id: hit._id,
+        ...(hit._source as Record<string, unknown>),
+      })),
+      total:
+        typeof res.hits.total === "number"
+          ? res.hits.total
+          : (res.hits.total?.value ?? 0),
+    };
+  } catch (err) {
+    throw asSearchUnavailableError(err);
+  }
 };

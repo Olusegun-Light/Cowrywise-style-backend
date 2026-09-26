@@ -17,6 +17,9 @@ export const SEARCH_USERS_QUEUE = "search.users.events";
 export const SEARCH_USERS_DLQ = "search.users.events.dlq";
 export const SEARCH_ROUTING_KEYS = ["search.user.upsert"] as const;
 
+const NOTIFICATIONS_DLQ_ROUTING_KEY = "notifications";
+const SEARCH_DLQ_ROUTING_KEY = "search";
+
 const CONNECT_TIMEOUT_MS = 10_000;
 
 const connection = amqp.connect([env.RABBITMQ_URL]);
@@ -34,16 +37,23 @@ export const channelWrapper: ChannelWrapper = connection.createChannel({
   json: true,
   setup: async (channel: ConfirmChannel) => {
     await channel.assertExchange(EXCHANGE, "topic", { durable: true });
-    await channel.assertExchange(DEAD_LETTER_EXCHANGE, "fanout", {
+    await channel.assertExchange(DEAD_LETTER_EXCHANGE, "direct", {
       durable: true,
     });
 
     await channel.assertQueue(NOTIFICATIONS_DLQ, { durable: true });
-    await channel.bindQueue(NOTIFICATIONS_DLQ, DEAD_LETTER_EXCHANGE, "");
+    await channel.bindQueue(
+      NOTIFICATIONS_DLQ,
+      DEAD_LETTER_EXCHANGE,
+      NOTIFICATIONS_DLQ_ROUTING_KEY,
+    );
 
     await channel.assertQueue(NOTIFICATIONS_QUEUE, {
       durable: true,
-      arguments: { "x-dead-letter-exchange": DEAD_LETTER_EXCHANGE },
+      arguments: {
+        "x-dead-letter-exchange": DEAD_LETTER_EXCHANGE,
+        "x-dead-letter-routing-key": NOTIFICATIONS_DLQ_ROUTING_KEY,
+      },
     });
 
     for (const key of NOTIFICATION_ROUTING_KEYS) {
@@ -51,12 +61,17 @@ export const channelWrapper: ChannelWrapper = connection.createChannel({
     }
 
     await channel.assertQueue(SEARCH_USERS_DLQ, { durable: true });
-    await channel.bindQueue(SEARCH_USERS_DLQ, DEAD_LETTER_EXCHANGE, "");
+    await channel.bindQueue(
+      SEARCH_USERS_DLQ,
+      DEAD_LETTER_EXCHANGE,
+      SEARCH_DLQ_ROUTING_KEY,
+    );
 
     await channel.assertQueue(SEARCH_USERS_QUEUE, {
       durable: true,
       arguments: {
         "x-dead-letter-exchange": DEAD_LETTER_EXCHANGE,
+        "x-dead-letter-routing-key": SEARCH_DLQ_ROUTING_KEY,
       },
     });
 

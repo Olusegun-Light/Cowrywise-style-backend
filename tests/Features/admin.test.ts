@@ -39,6 +39,7 @@ describe("Admin KYC review — event publishing", () => {
     const user = await signupAndLogin();
     const admin = await signupAndLogin();
     await kycService.submitKyc(user.userId, "22212345678", "12345678901");
+    (publishEvent as jest.Mock).mockClear();
 
     await adminService.approveKyc(user.userId, admin.userId);
 
@@ -51,6 +52,7 @@ describe("Admin KYC review — event publishing", () => {
     const user = await signupAndLogin();
     const admin = await signupAndLogin();
     await kycService.submitKyc(user.userId, "22212345678", "12345678901");
+    (publishEvent as jest.Mock).mockClear();
 
     await adminService.rejectKyc(user.userId, "Blurry ID photo", admin.userId);
 
@@ -62,6 +64,7 @@ describe("Admin KYC review — event publishing", () => {
   it("publishes a search index event when freezing a user", async () => {
     const user = await signupAndLogin();
     const admin = await signupAndLogin();
+    (publishEvent as jest.Mock).mockClear();
 
     await adminService.freezeUser(user.userId, admin.userId);
 
@@ -74,6 +77,7 @@ describe("Admin KYC review — event publishing", () => {
     const user = await signupAndLogin();
     const admin = await signupAndLogin();
     await adminService.freezeUser(user.userId, admin.userId);
+    (publishEvent as jest.Mock).mockClear();
 
     await adminService.unfreezeUser(user.userId, admin.userId);
 

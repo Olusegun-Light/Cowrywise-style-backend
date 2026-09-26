@@ -24,8 +24,15 @@ export const runTransactionSearchSync = async () => {
   for (const transaction of transactions) {
     const user = transaction.wallet.user;
     if (!user) continue;
-    await searchService.indexTransaction(transaction, user);
-    indexed++;
+    try {
+      await searchService.indexTransaction(transaction, user);
+      indexed++;
+    } catch (err) {
+      logger.error(
+        { err, transactionId: transaction.id },
+        "Failed to index transaction — skipping",
+      );
+    }
   }
 
   logger.info(

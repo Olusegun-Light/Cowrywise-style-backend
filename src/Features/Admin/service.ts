@@ -206,6 +206,12 @@ export const unfreezeUser = async (userId: string, adminId: string) => {
     }),
   ]);
 
+  try {
+    await publishEvent("search.user.upsert", { userId });
+  } catch (err) {
+    logger.error({ err }, "Failed to publish search index event");
+  }
+
   return updated;
 };
 

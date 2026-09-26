@@ -4,8 +4,10 @@ jest.mock("../../src/Config/elasticsearch", () => ({
   TRANSACTIONS_INDEX: "transactions",
 }));
 
+import { errors as esErrors } from "@elastic/elasticsearch";
 import * as searchService from "../../src/Features/Search/service";
 import { esClient } from "../../src/Config/elasticsearch";
+import { AppError } from "../../src/Utils/AppError";
 
 describe("Search/service", () => {
   afterEach(() => {
@@ -73,7 +75,10 @@ describe("Search/service", () => {
 
   it("searchUsers builds a paginated multi_match query over name and email", async () => {
     (esClient.search as jest.Mock).mockResolvedValue({
-      hits: { hits: [{ _source: { firstName: "Ada" } }], total: { value: 1 } },
+      hits: {
+        hits: [{ _id: "user-1", _source: { firstName: "Ada" } }],
+        total: { value: 1 },
+      },
     });
 
     const result = await searchService.searchUsers("ada", 1, 20);
@@ -90,16 +95,40 @@ describe("Search/service", () => {
         },
       },
     });
-    expect(result.results).toEqual([{ firstName: "Ada" }]);
+    expect(result.results).toEqual([{ id: "user-1", firstName: "Ada" }]);
     expect(result.total).toBe(1);
+  });
+
+  it("searchUsers throws a clean 503 AppError when Elasticsearch is unreachable", async () => {
+    (esClient.search as jest.Mock).mockRejectedValue(
+      new esErrors.ConnectionError("connect ECONNREFUSED"),
+    );
+
+    await expect(searchService.searchUsers("ada", 1, 20)).rejects.toMatchObject(
+      { statusCode: 503 },
+    );
+    await expect(
+      searchService.searchUsers("ada", 1, 20),
+    ).rejects.toBeInstanceOf(AppError);
+  });
+
+  it("searchUsers rethrows a non-Elasticsearch error unchanged", async () => {
+    (esClient.search as jest.Mock).mockRejectedValue(new Error("boom"));
+
+    await expect(searchService.searchUsers("ada", 1, 20)).rejects.toThrow(
+      "boom",
+    );
   });
 
   it("searchTransactions builds a paginated multi_match query over reference and user fields", async () => {
     (esClient.search as jest.Mock).mockResolvedValue({
-      hits: { hits: [], total: { value: 0 } },
+      hits: {
+        hits: [{ _id: "txn-1", _source: { providerReference: "ref_abc" } }],
+        total: { value: 0 },
+      },
     });
 
-    await searchService.searchTransactions("ref_abc", 2, 10);
+    const result = await searchService.searchTransactions("ref_abc", 2, 10);
 
     expect(esClient.search).toHaveBeenCalledWith({
       index: "transactions",
@@ -113,5 +142,18 @@ describe("Search/service", () => {
         },
       },
     });
+    expect(result.results).toEqual([
+      { id: "txn-1", providerReference: "ref_abc" },
+    ]);
+  });
+
+  it("searchTransactions throws a clean 503 AppError when Elasticsearch is unreachable", async () => {
+    (esClient.search as jest.Mock).mockRejectedValue(
+      new esErrors.TimeoutError("Request timed out"),
+    );
+
+    await expect(
+      searchService.searchTransactions("ref_abc", 1, 20),
+    ).rejects.toMatchObject({ statusCode: 503 });
   });
 });
