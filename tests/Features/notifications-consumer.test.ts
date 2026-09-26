@@ -1,3 +1,5 @@
+import { rabbitmqConsumeDuration } from "../../src/Utils/metrics";
+
 jest.mock("../../src/Features/Notifications/service");
 
 jest.mock("../../src/Config/rabbitmq", () => ({
@@ -136,5 +138,47 @@ describe("startNotificationEventConsumer — ack/nack wiring", () => {
 
     expect(channel.ack).toHaveBeenCalledWith(msg);
     expect(notificationsService.createNotification).not.toHaveBeenCalled();
+  });
+
+  it("records consume duration with status=success on ack", async () => {
+    (notificationsService.createNotification as jest.Mock).mockResolvedValue(
+      undefined,
+    );
+    const observeSpy = jest.spyOn(rabbitmqConsumeDuration, "observe");
+    const { onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from(JSON.stringify({ userId: "user-1" })),
+      fields: { routingKey: "kyc.approved" },
+    };
+
+    await onMessage(msg);
+
+    expect(observeSpy).toHaveBeenCalledWith(
+      { routing_key: "kyc.approved", status: "success" },
+      expect.any(Number),
+    );
+
+    observeSpy.mockRestore();
+  });
+
+  it("records consume duration with status=failure on nack", async () => {
+    (notificationsService.createNotification as jest.Mock).mockRejectedValue(
+      new Error("db error"),
+    );
+    const observeSpy = jest.spyOn(rabbitmqConsumeDuration, "observe");
+    const { onMessage } = await getMessageHandler();
+    const msg = {
+      content: Buffer.from(JSON.stringify({ userId: "user-1" })),
+      fields: { routingKey: "kyc.approved" },
+    };
+
+    await onMessage(msg);
+
+    expect(observeSpy).toHaveBeenCalledWith(
+      { routing_key: "kyc.approved", status: "failure" },
+      expect.any(Number),
+    );
+
+    observeSpy.mockRestore();
   });
 });

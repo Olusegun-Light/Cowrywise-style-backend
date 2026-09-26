@@ -1,3 +1,5 @@
+import { rabbitmqPublishTotal } from "../../src/Utils/metrics";
+
 jest.unmock("../../src/Utils/eventBus");
 
 jest.mock("../../src/Config/rabbitmq", () => ({
@@ -34,5 +36,37 @@ describe("publishEvent", () => {
     await expect(
       publishEvent("kyc.approved", { userId: "user-1" }),
     ).rejects.toThrow("timeout");
+  });
+
+  it("increments the publish counter with status=success on a successful publish", async () => {
+    const incSpy = jest.spyOn(rabbitmqPublishTotal, "inc");
+    (channelWrapper.publish as jest.Mock).mockResolvedValue(true);
+
+    await publishEvent("kyc.approved", { userId: "user-1" });
+
+    expect(incSpy).toHaveBeenCalledWith({
+      routing_key: "kyc.approved",
+      status: "success",
+    });
+
+    incSpy.mockRestore();
+  });
+
+  it("increments the publish counter with status=failure when the publish rejects", async () => {
+    const incSpy = jest.spyOn(rabbitmqPublishTotal, "inc");
+    (channelWrapper.publish as jest.Mock).mockRejectedValue(
+      new Error("timeout"),
+    );
+
+    await expect(
+      publishEvent("kyc.approved", { userId: "user-1" }),
+    ).rejects.toThrow("timeout");
+
+    expect(incSpy).toHaveBeenCalledWith({
+      routing_key: "kyc.approved",
+      status: "failure",
+    });
+
+    incSpy.mockRestore();
   });
 });

@@ -1,6 +1,7 @@
 import type { ConfirmChannel, ConsumeMessage } from "amqplib";
 import { channelWrapper, NOTIFICATIONS_QUEUE } from "../../Config/rabbitmq";
 import { logger } from "../../Utils/logger";
+import { rabbitmqConsumeDuration } from "../../Utils/metrics";
 import * as notificationsService from "./service";
 
 type CirclePayoutEvent = { userId: string; circleId: string; round: number };
@@ -60,16 +61,25 @@ export const startNotificationEventConsumer = async () => {
       NOTIFICATIONS_QUEUE,
       async (msg: ConsumeMessage | null) => {
         if (!msg) return;
+        const start = process.hrtime.bigint();
         try {
           const payload = JSON.parse(msg.content.toString());
           await handleMessage(msg.fields.routingKey, payload);
           channel.ack(msg);
+          rabbitmqConsumeDuration.observe(
+            { routing_key: msg.fields.routingKey, status: "success" },
+            Number(process.hrtime.bigint() - start) / 1e9,
+          );
         } catch (err) {
           logger.error(
             { err, routingKey: msg.fields.routingKey },
             "Failed to process notification event — dead-lettering",
           );
           channel.nack(msg, false, false);
+          rabbitmqConsumeDuration.observe(
+            { routing_key: msg.fields.routingKey, status: "failure" },
+            Number(process.hrtime.bigint() - start) / 1e9,
+          );
         }
       },
       { noAck: false },
