@@ -5,14 +5,13 @@ services:
       dockerfile: Dockerfile.dev
     container_name: cowrywise-backend-dev
     restart: unless-stopped
-    ports:
-      - "4000:3000"
     env_file:
       - .env
     environment:
       - DATABASE_URL=postgresql://postgres@host.docker.internal:5432/cowrywise_dev?schema=public
       - REDIS_URL=redis://host.docker.internal:6379
       - RABBITMQ_URL=amqp://guest:guest@host.docker.internal:5672
+      - TRUST_PROXY=true
     volumes:
       - .:/app
       - /app/node_modules
@@ -24,6 +23,19 @@ services:
         max-file: "3"
     labels:
       - "logging.app=cowrywise-backend"
+    networks:
+      - cowrywise-backend-dev
+
+  nginx:
+    image: nginx:alpine
+    container_name: cowrywise-nginx
+    restart: unless-stopped
+    ports:
+      - "4000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - cowrywise-backend-dev
     networks:
       - cowrywise-backend-dev
 
