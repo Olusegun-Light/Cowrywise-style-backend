@@ -24,6 +24,10 @@ import { register } from "./Utils/metrics";
 
 const app = express();
 
+if (env.TRUST_PROXY) {
+  app.set("trust proxy", 1);
+}
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(httpMetrics);
 

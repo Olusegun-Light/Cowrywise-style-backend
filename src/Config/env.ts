@@ -36,6 +36,10 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().min(1).default("http://localhost:3000"),
   LOG_LEVEL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
 });
 
 const parsed = envSchema.safeParse(process.env);
