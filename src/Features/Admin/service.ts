@@ -57,6 +57,12 @@ export const approveKyc = async (userId: string, adminId: string) => {
     logger.error({ err }, "Failed to publish KYC approval event");
   }
 
+  try {
+    await publishEvent("search.user.upsert", { userId });
+  } catch (err) {
+    logger.error({ err }, "Failed to publish search index event");
+  }
+
   return updated;
 };
 
@@ -102,6 +108,12 @@ export const rejectKyc = async (
     await publishEvent("kyc.rejected", { userId, reason });
   } catch (err) {
     logger.error({ err }, "Failed to publish KYC rejection event");
+  }
+
+  try {
+    await publishEvent("search.user.upsert", { userId });
+  } catch (err) {
+    logger.error({ err }, "Failed to publish search index event");
   }
 
   return updated;
@@ -164,6 +176,12 @@ export const freezeUser = async (userId: string, adminId: string) => {
       data: { adminId, action: "USER_FREEZE", targetId: userId },
     }),
   ]);
+
+  try {
+    await publishEvent("search.user.upsert", { userId });
+  } catch (err) {
+    logger.error({ err }, "Failed to publish search index event");
+  }
 
   return updated;
 };

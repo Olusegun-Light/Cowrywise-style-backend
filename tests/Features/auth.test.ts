@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../../src/app";
 import * as mailer from "../../src/Utils/mailer";
 import { signupAndLogin } from "../helpers/auth";
+import { publishEvent } from "../../src/Utils/eventBus";
 
 const sendSignupOtpEmailMock = mailer.sendSignupOtpEmail as jest.Mock;
 
@@ -71,6 +72,24 @@ describe("Auth", () => {
         .expect(422);
 
       expect(res.body.success).toBe(false);
+    });
+
+    it("publishes a search index event on signup", async () => {
+      const email = uniqueEmail();
+
+      const res = await request(app)
+        .post("/api/v1/auth/signup")
+        .send({
+          firstName: "Test",
+          lastName: "User",
+          email,
+          password: "TestPass123!",
+        })
+        .expect(201);
+
+      expect(publishEvent).toHaveBeenCalledWith("search.user.upsert", {
+        userId: res.body.data.id,
+      });
     });
   });
 
