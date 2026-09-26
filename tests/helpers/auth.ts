@@ -1,3 +1,6 @@
+import prisma from "../../src/Config/db";
+import { RoleEnum } from "../../src/Utils/roles";
+
 import request from "supertest";
 import app from "../../src/app";
 import * as mailer from "../../src/Utils/mailer";
@@ -38,4 +41,21 @@ export const signupAndLogin = async (overrides: SignupOverrides = {}) => {
     accessToken: verifyRes.body.data.accessToken as string,
     refreshToken: verifyRes.body.data.refreshToken as string,
   };
+};
+
+export const signupAdminAndLogin = async (overrides: SignupOverrides = {}) => {
+  const result = await signupAndLogin(overrides);
+
+  const adminRole = await prisma.role.upsert({
+    where: { name: RoleEnum.ADMIN },
+    update: {},
+    create: { name: RoleEnum.ADMIN, description: "Full administrative access" },
+  });
+
+  await prisma.user.update({
+    where: { id: result.userId },
+    data: { roleId: adminRole.id },
+  });
+
+  return result;
 };

@@ -8,8 +8,10 @@ import {
   listUsersQuerySchema,
   createBroadcastSchema,
   listAuditLogQuerySchema,
+  searchQuerySchema,
 } from "./validation";
 import * as notificationsService from "../Notifications/service";
+import * as searchService from "../Search/service";
 import { logger } from "../../Utils/logger";
 
 export default class AdminController {
@@ -152,6 +154,30 @@ export default class AdminController {
     return successResponse({
       res,
       message: "Audit log retrieved",
+      data: result,
+    });
+  }
+
+  static async searchUsers(req: Request, res: Response) {
+    const { q, page, limit } = validateBody(searchQuerySchema, req.query);
+
+    const result = await searchService.searchUsers(q, page, limit);
+
+    return successResponse({
+      res,
+      message: "User search results",
+      data: result,
+    });
+  }
+
+  static async searchTransactions(req: Request, res: Response) {
+    const { q, page, limit } = validateBody(searchQuerySchema, req.query);
+
+    const result = await searchService.searchTransactions(q, page, limit);
+
+    return successResponse({
+      res,
+      message: "Transaction search results",
       data: result,
     });
   }

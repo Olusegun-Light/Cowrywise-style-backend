@@ -17,6 +17,13 @@ router.post("/kyc/:userId/reject", asyncHandler(AdminController.rejectKyc));
 
 router.get("/users", asyncHandler(AdminController.listUsers));
 
+router.get("/users/search", asyncHandler(AdminController.searchUsers));
+
+router.get(
+  "/transactions/search",
+  asyncHandler(AdminController.searchTransactions),
+);
+
 router.post("/users/:userId/freeze", asyncHandler(AdminController.freezeUser));
 
 router.post(

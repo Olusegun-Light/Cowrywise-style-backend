@@ -92,6 +92,46 @@ export const listUsersQuerySchema = z.object({
     .openapi({ example: "PENDING" }),
 });
 
+export const searchQuerySchema = z.object({
+  q: z.string().min(1).openapi({ example: "ada" }),
+  page: z.coerce.number().int().positive().default(1).openapi({ example: 1 }),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(20)
+    .openapi({ example: 20 }),
+});
+
+AdminRegistry.registerPath({
+  method: "get",
+  path: "/admin/users/search",
+  tags: ["Admin"],
+  summary: "Search users via Elasticsearch",
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: searchQuerySchema,
+  },
+  responses: {
+    200: { description: "User search results" },
+  },
+});
+
+AdminRegistry.registerPath({
+  method: "get",
+  path: "/admin/transactions/search",
+  tags: ["Admin"],
+  summary: "Search transactions via Elasticsearch",
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: searchQuerySchema,
+  },
+  responses: {
+    200: { description: "Transaction search results" },
+  },
+});
+
 AdminRegistry.registerPath({
   method: "get",
   path: "/admin/users",
