@@ -75,11 +75,21 @@ cp .env.example .env   # fill in DATABASE_URL, JWT_SECRET, PAYSTACK_SECRET_KEY, 
 
 ```bash
 make start        # starts Postgres, Redis, RabbitMQ, then the dev server
-npx prisma migrate dev   # first run only — creates the schema
-npx ts-node prisma/seed.ts   # first run only — seeds sample investment funds
+npx prisma migrate dev        # first run only — creates the schema
+npx ts-node prisma/seed/index.ts   # first run only — seeds sample data (see below)
 ```
 
 The API is now at `http://localhost:3000`, docs at `http://localhost:3000/api/v1/docs`.
+
+The seed script populates a full working dataset — not just lookup tables — by calling the app's own service functions (`createUser`, `approveKyc`, `buyFundUnits`, `contributeToCircle`, etc.), so everything it creates is guaranteed consistent with real business rules. It's safe to rerun any time; it wipes its own data first. Password for every seeded account is `Password123!`:
+
+| Email | What it demonstrates |
+|---|---|
+| `admin@cowrywise.test` | Admin role — KYC review queue, audit log, user search |
+| `ada@cowrywise.test` | KYC approved; has savings plans, a fund purchase, and created a Circle |
+| `grace@cowrywise.test` | KYC approved; signed up via Ada's referral code (reward already paid), joined Ada's Circle |
+| `alan@cowrywise.test` | KYC submitted, sitting in the admin's pending-review queue |
+| `marie@cowrywise.test` | Brand-new account — signup only, nothing else set up |
 
 **Full stack with search + observability** (NGINX, Elasticsearch, Prometheus, Grafana, Loki, and the app itself, all in Docker):
 

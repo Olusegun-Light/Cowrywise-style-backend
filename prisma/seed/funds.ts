@@ -1,11 +1,6 @@
-import { PrismaClient } from "../src/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { env } from "../src/Config/env";
+import prisma from "../../src/Config/db";
 
-const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
-
-const main = async () => {
+export const seedFunds = async () => {
   await prisma.fund.createMany({
     data: [
       {
@@ -31,7 +26,6 @@ const main = async () => {
   });
 
   console.log("Seeded funds");
-  await prisma.$disconnect();
-};
 
-main();
+  return prisma.fund.findMany({ orderBy: { createdAt: "asc" } });
+};
